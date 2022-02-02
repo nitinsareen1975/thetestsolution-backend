@@ -60,7 +60,7 @@ $app->singleton(
 */
 
 $app->configure('app');
-
+$app->configure('services');
 /*
 |--------------------------------------------------------------------------
 | Register Middleware
@@ -72,9 +72,9 @@ $app->configure('app');
 |
 */
 
-// $app->middleware([
-//     App\Http\Middleware\ExampleMiddleware::class
-// ]);
+$app->middleware([
+    App\Http\Middleware\CorsMiddleware::class
+]);
 
 $app->routeMiddleware([
     'auth' => App\Http\Middleware\Authenticate::class,
@@ -94,7 +94,17 @@ $app->routeMiddleware([
 $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\AuthServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
+$app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
+$app->register(Illuminate\Mail\MailServiceProvider::class);
 
+$app->configure('mail');
+
+$app->alias('mail.manager', Illuminate\Mail\MailManager::class);
+$app->alias('mail.manager', Illuminate\Contracts\Mail\Factory::class);
+
+$app->alias('mailer', Illuminate\Mail\Mailer::class);
+$app->alias('mailer', Illuminate\Contracts\Mail\Mailer::class);
+$app->alias('mailer', Illuminate\Contracts\Mail\MailQueue::class);
 /*
 |--------------------------------------------------------------------------
 | Load The Application Routes
@@ -109,9 +119,10 @@ $app->register(App\Providers\AuthServiceProvider::class);
 $app->router->group([
     'namespace' => 'App\Http\Controllers',
 ], function ($router) {
-    require __DIR__.'/../routes/common.php';
+    require __DIR__.'/../routes/auth.php';
     require __DIR__.'/../routes/admin.php';
     require __DIR__.'/../routes/lab-admin.php';
+    require __DIR__.'/../routes/global.php';
 });
 
 return $app;
