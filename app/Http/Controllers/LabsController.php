@@ -1,5 +1,7 @@
-<?php 
+<?php
+
 namespace App\Http\Controllers;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Labs;
@@ -9,12 +11,13 @@ use Illuminate\Http\Request;
 class LabsController extends Controller
 {
     protected string $tableLabs = 'labs';
+    protected string $tableLabPricing = 'lab_pricing';
 
     public function __construct()
     {
         $this->middleware('auth');
     }
-    
+
     public function add(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -23,7 +26,7 @@ class LabsController extends Controller
         ]);
         if ($validator->fails()) {
             $messages = $validator->errors();
-            return response()->json(['status' => false, 'message' => implode(", ",$messages->all())], 409);
+            return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
         }
         try {
             $lab = new Labs;
@@ -39,8 +42,8 @@ class LabsController extends Controller
             $lab->date_incorporated = $request->input('date_incorporated');
             $lab->payment_days = $request->input('payment_days');
             $lab->payment_mode = $request->input('payment_mode');
-            $lab->has_tax = empty($request->input('has_tax')) ? 0 : (boolean)$request->input('has_tax');
-            $lab->has_compliance = empty($request->input('has_compliance')) ? 0 : (boolean)$request->input('has_compliance');
+            $lab->has_tax = empty($request->input('has_tax')) ? 0 : (bool)$request->input('has_tax');
+            $lab->has_compliance = empty($request->input('has_compliance')) ? 0 : (bool)$request->input('has_compliance');
             $lab->location_code = $request->input('location_code');
             $lab->street = $request->input('street');
             $lab->city = $request->input('city');
@@ -48,12 +51,13 @@ class LabsController extends Controller
             $lab->county = $request->input('county');
             $lab->country = $request->input('country');
             $lab->zip = $request->input('zip');
-            $lab->geo_location = $request->input('geo_location');
-            $lab->status = empty($request->input('status')) ? 1 : (boolean)$request->input('status');
+            $lab->geo_lat = $request->input('geo_lat');
+            $lab->geo_long = $request->input('geo_long');
+            $lab->status = empty($request->input('status')) ? 1 : (bool)$request->input('status');
             $lab->save();
             return response()->json(['status' => true, 'data' => $lab, 'message' => 'Lab created successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Lab Creation Failed.'.$e->getMessage()], 409);
+            return response()->json(['status' => false, 'message' => 'Lab Creation Failed.'], 409);
         }
     }
 
@@ -61,11 +65,12 @@ class LabsController extends Controller
     {
         try {
             $keys = $request->keys();
-            if(!empty($keys)){
+            if (!empty($keys)) {
                 $data = [];
-                foreach($keys as $key){
-                    if(in_array($key, ['has_tax','has_compliance','status'])){
-                        $data[$key] = (boolean)$request->get($key);
+                foreach ($keys as $key) {
+                    if($key == "lab_pricing") continue;
+                    if (in_array($key, ['has_tax', 'has_compliance', 'status'])) {
+                        $data[$key] = (bool)$request->get($key);
                     } else {
                         $data[$key] = $request->get($key);
                     }
@@ -77,7 +82,7 @@ class LabsController extends Controller
             return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
         }
     }
-    
+
     public function get($id)
     {
         return response()->json(['status' => true, 'message' => 'Success', 'data' =>  Labs::findOrFail($id)], 200);
@@ -85,36 +90,36 @@ class LabsController extends Controller
 
     public function getAll(Request $request)
     {
-        $query = "SELECT l.* FROM {$this->tableLabs} l WHERE 1=1 "; 
+        $query = "SELECT l.* FROM {$this->tableLabs} l WHERE 1=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
         $order = env("RESULTS_ORDER", "desc");
         $limit = env("RESULTS_PER_PAGE", 10);
-        if ($request->has('filters') ) {
+        if ($request->has('filters')) {
             $filters = json_decode($request->get("filters"), true);
-            if(count($filters) > 0){
-                foreach($filters as $column => $value){
+            if (count($filters) > 0) {
+                foreach ($filters as $column => $value) {
                     $query .= "AND l.{$column} LIKE '%{$value}%' ";
                 }
             }
         }
         if ($request->has('sorter')) {
             $sorter = json_decode($request->get("sorter"), true);
-            if(isset($sorter['column'])){
+            if (isset($sorter['column'])) {
                 $sort = $sorter['column'];
             }
-            if(isset($sorter['order'])){
+            if (isset($sorter['order'])) {
                 $order = $sorter['order'];
             }
         }
         $query .= "ORDER BY {$sort} {$order} ";
-        if ($request->has('pagination') ) {
+        if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
-            if(isset($pagination['page'])){
+            if (isset($pagination['page'])) {
                 $page = max(1, $pagination['page']);
             }
-            if(isset($pagination['pageSize'])){
+            if (isset($pagination['pageSize'])) {
                 $limit = max(env("RESULTS_PER_PAGE"), $pagination['pageSize']);
             }
             $offset = ($page - 1) * $limit;
@@ -122,18 +127,113 @@ class LabsController extends Controller
         }
         /* filters, pagination and sorter */
         $labs = DB::select($query);
-        
+
         $paginationArr = [
             'count' => DB::table($this->tableLabs)->count(),
             'currentPage' => $page,
             'pageSize' => $limit
         ];
         return response()->json([
-            'status' => true, 
-            'message' => 'Success', 
+            'status' => true,
+            'message' => 'Success',
             'data' =>  $labs,
             'pagination' => $paginationArr
         ], 200);
     }
 
+    /* lab-pricing */
+    public function getPricing($id)
+    {
+        $query = "SELECT * FROM {$this->tableLabPricing} WHERE lab_id = {$id}";
+        $pricing = DB::select($query);
+        if (count($pricing) > 0) {
+            return response()->json(['status' => true, 'message' => 'Success', 'data' =>  $pricing], 200);
+        } else {
+            return response()->json(['status' => false, 'message' => 'Pricing not found.'], 200);
+        }
+    }
+
+    public function getAllPricing(Request $request)
+    {
+        $query = "SELECT l.* FROM {$this->tableLabPricing} l WHERE 1=1 ";
+        /* filters, pagination and sorter */
+        $page = 1;
+        $sort = env("RESULTS_SORT", "id");
+        $order = env("RESULTS_ORDER", "desc");
+        $limit = env("RESULTS_PER_PAGE", 10);
+        if ($request->has('filters')) {
+            $filters = json_decode($request->get("filters"), true);
+            if (count($filters) > 0) {
+                foreach ($filters as $column => $value) {
+                    $query .= "AND l.{$column} LIKE '%{$value}%' ";
+                }
+            }
+        }
+        if ($request->has('sorter')) {
+            $sorter = json_decode($request->get("sorter"), true);
+            if (isset($sorter['column'])) {
+                $sort = $sorter['column'];
+            }
+            if (isset($sorter['order'])) {
+                $order = $sorter['order'];
+            }
+        }
+        $query .= "ORDER BY {$sort} {$order} ";
+        if ($request->has('pagination')) {
+            $pagination = json_decode($request->get("pagination"), true);
+            if (isset($pagination['page'])) {
+                $page = max(1, $pagination['page']);
+            }
+            if (isset($pagination['pageSize'])) {
+                $limit = max(env("RESULTS_PER_PAGE"), $pagination['pageSize']);
+            }
+            $offset = ($page - 1) * $limit;
+            $query .= "LIMIT {$offset}, {$limit} ";
+        }
+        /* filters, pagination and sorter */
+        $pricing = DB::select($query);
+
+        $paginationArr = [
+            'count' => DB::table($this->tableLabPricing)->count(),
+            'currentPage' => $page,
+            'pageSize' => $limit
+        ];
+        return response()->json([
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $pricing,
+            'pagination' => $paginationArr
+        ], 200);
+    }
+
+    public function addUpdatePricing($id, Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'pricing' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+            
+            $pricing = $request->input("pricing");
+            if(count($pricing) > 0){
+                DB::table($this->tableLabPricing)->where('lab_id', $id)->delete();
+                $data = [];
+                foreach($pricing as $item){
+                    $data[] = [
+                        'lab_id' => $id,
+                        'price' => $item['price'],
+                        'test_type' => $item['test_type'],
+                        'test_codes' => $item['test_codes']
+                    ];
+                }
+                DB::table($this->tableLabPricing)->insert($data);
+            }
+            return response()->json(['status' => true, 'data' => [], 'message' => 'Pricing updated successfully.'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Pricing not updated.'], 409);
+        }
+    }
 }

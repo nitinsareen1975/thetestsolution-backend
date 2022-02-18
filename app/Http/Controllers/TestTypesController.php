@@ -67,7 +67,7 @@ class TestTypesController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Test Type updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Update Failed.'.$e->getMessage()], 409);
+            return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
         }
     }
     

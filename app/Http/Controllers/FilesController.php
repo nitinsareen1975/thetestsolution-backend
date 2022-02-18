@@ -2,11 +2,14 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\GlobalHelper;
+use App\Models\Labs;
+use App\Models\Patients;
 use Illuminate\Http\Request;
 
 class FilesController extends Controller
 {
     protected string $tableLabs = 'labs';
+    protected string $tablePatients = 'patients';
 
     public function __construct()
     {
@@ -35,7 +38,7 @@ class FilesController extends Controller
                     break;
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Upload Failed.'.$e->getMessage()], 409);
+            return response()->json(['status' => false, 'message' => 'Upload Failed.'], 409);
         }
     }
 
@@ -46,11 +49,14 @@ class FilesController extends Controller
                 case "lab-logo":
                     return $this->removeLabLogo($id);
                     break;
+                case "patient-identifier-doc":
+                    return $this->removePatientIdentifierDoc($id);
+                    break;
                 default:
                     break;
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Upload Failed.'.$e->getMessage()], 409);
+            return response()->json(['status' => false, 'message' => 'Upload Failed.'], 409);
         }
     }
 
@@ -78,11 +84,29 @@ class FilesController extends Controller
             $oldLogo = DB::table($this->tableLabs)->where('id','=',$id)->first();
             $oldLogo = base_path().$oldLogo->logo;                
             if(file_exists($oldLogo)){
-                unset($oldLogo);
-                return response()->json(['status' => true, 'message' => 'File removed.'], 200);
-            } else {
-                return response()->json(['status' => false, 'message' => 'File not found.'], 409);
+                unlink($oldLogo);
+            } 
+            $data = [];
+            $data['logo'] = "";
+            DB::table($this->tableLabs)->where('id', $id)->update($data);
+            return response()->json(['status' => true, 'message' => 'File removed.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Request Failed.'], 409);
+        }
+    }
+    
+    public function removePatientIdentifierDoc($id)
+    {
+        try {
+            $oldFile = DB::table($this->tablePatients)->where('id','=',$id)->first();
+            $oldFile = base_path().$oldFile->identifier_doc;                
+            if(file_exists($oldFile)){
+                unlink($oldFile);
             }
+            $data = [];
+            $data['identifier_doc'] = "";
+            DB::table($this->tablePatients)->where('id', $id)->update($data);
+            return response()->json(['status' => true, 'message' => 'File removed.'], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'Request Failed.'], 409);
         }

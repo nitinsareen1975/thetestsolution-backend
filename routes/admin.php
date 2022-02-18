@@ -20,6 +20,13 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('labs', 'LabsController@add');
     $router->put('labs/{id}', 'LabsController@update');
     /* labs */
+    
+    /* labs */
+    $router->get('lab-pricing', 'LabsController@getAllPricing');
+    $router->get('lab-pricing/{id}', 'LabsController@getPricing');
+    $router->post('lab-pricing/{id}', 'LabsController@addUpdatePricing');
+    $router->put('lab-pricing/{id}', 'LabsController@addUpdatePricing');
+    /* labs */
 
     /* test-types */
     $router->get('test-types', 'TestTypesController@getAll');
@@ -40,4 +47,10 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->delete('upload/{key}/{id}', 'FilesController@remove');
     /* files */
 
+    /* patients */
+    $router->get('patients', 'PatientController@getAll');
+    $router->get('patients/{id}', 'PatientController@get');
+    $router->post('patients', 'PatientController@add');
+    $router->put('patients/{id}', 'PatientController@update');
+    /* patients */
 });
