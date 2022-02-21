@@ -63,6 +63,7 @@ class GlobalController extends Controller
             }
         }
         $query->orderBy($sort, $order);
+        $totalRecords = count($query->get());
         if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
             if (isset($pagination['page'])) {
@@ -78,8 +79,8 @@ class GlobalController extends Controller
         $testTypes = $query->get();
 
         $paginationArr = [
-            'count' => DB::table($this->tableTestTypes)->count(),
-            'currentPage' => $page,
+            'totalRecords' => $totalRecords,
+            'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([
@@ -152,6 +153,7 @@ class GlobalController extends Controller
             }
         }
         $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
         if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
             if (isset($pagination['page'])) {
@@ -167,8 +169,8 @@ class GlobalController extends Controller
         $labs = DB::select($query);
 
         $paginationArr = [
-            'count' => DB::table($this->tableLabs)->count(),
-            'currentPage' => $page,
+            'totalRecords' => $totalRecords,
+            'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([
@@ -209,36 +211,16 @@ class GlobalController extends Controller
 
     public function registerPatient(Request $request)
     {
-        /* $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'firstname' => 'required|string',
             'email' => 'required|email'
         ]);
         if ($validator->fails()) {
             $messages = $validator->errors();
             return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
-        } */
+        }
         try {
-            $pricingId = $request->input('pricing_id');
-            $payment = new PaymentsController();
-            $pricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE id = {$pricingId}");
-            $pricing = $pricing[0];
-
-            $paymentData = [
-                "amount" => $pricing->price * 100,
-                "currency" => strtolower($pricing->currency),
-                "source" => $request->input('transaction_id'),
-                "description" => "Payment for scheduled screening"
-            ];
-            /* $paymentData = [
-                "amount" => 10 * 100,
-                "currency" => 'usd',
-                "source" => $request->input('transaction_id'),
-                "description" => "Payment for scheduled screening"
-            ]; */
-            $response = $payment->makeStripePayment($paymentData);
-            $response = $response->getData();
-            return response()->json(['status' => false, 'message' => 'Paymemt response:: '.$response->message], 409);
-            if ($response->status == true) {
+            if (!empty($request->input('transaction_id'))) {
                 $patients = new Patients;
                 $patients->city = $request->input('city');
                 $patients->country = $request->input('country');
@@ -271,7 +253,7 @@ class GlobalController extends Controller
                 $patients->street = $request->input('street');
                 $patients->pricing_id = $request->input('pricing_id');
                 $patients->zip = $request->input('zip');
-                $patients->transaction_id = $response->data->id;
+                $patients->transaction_id = $request->input('transaction_id');
                 $patients->confirmation_code = $request->input('confirmation_code');
                 $patients->progress_status = empty($request->input('progress_status')) ? 1 : $request->input('progress_status');
                 $patients->payment_provider = empty($request->input('payment_provider')) ? 'Stripe' : $request->input('payment_provider');
@@ -279,6 +261,9 @@ class GlobalController extends Controller
                 $patients->save();
 
                 //save payment
+                $pricingId = $request->input('pricing_id');
+                $pricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE id = {$pricingId}");
+                $pricing = $pricing[0];
                 $payments = new Payments;
                 $payments->patient_id = $patients->id;
                 $payments->transaction_id = $patients->transaction_id;
@@ -310,10 +295,10 @@ class GlobalController extends Controller
                 });
                 return response()->json(['status' => true, 'data' => $patients, 'message' => 'Registration successful.'], 201);
             } else {
-                return response()->json(['status' => false, 'message' => 'Registration Failed: '.$response->message], 409);
+                return response()->json(['status' => false, 'message' => 'Payment Failed.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Registration Failed.'.(env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Registration Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
         }
     }
 
@@ -343,6 +328,7 @@ class GlobalController extends Controller
             }
         }
         $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
         if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
             if (isset($pagination['page'])) {
@@ -358,8 +344,8 @@ class GlobalController extends Controller
         $results = DB::select($query);
 
         $paginationArr = [
-            'count' => count($results),
-            'currentPage' => $page,
+            'totalRecords' => $totalRecords,
+            'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([

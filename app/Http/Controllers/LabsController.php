@@ -114,6 +114,7 @@ class LabsController extends Controller
             }
         }
         $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
         if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
             if (isset($pagination['page'])) {
@@ -129,8 +130,8 @@ class LabsController extends Controller
         $labs = DB::select($query);
 
         $paginationArr = [
-            'count' => DB::table($this->tableLabs)->count(),
-            'currentPage' => $page,
+            'totalRecords' => $totalRecords,
+            'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([
@@ -179,6 +180,7 @@ class LabsController extends Controller
             }
         }
         $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
         if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
             if (isset($pagination['page'])) {
@@ -194,8 +196,8 @@ class LabsController extends Controller
         $pricing = DB::select($query);
 
         $paginationArr = [
-            'count' => DB::table($this->tableLabPricing)->count(),
-            'currentPage' => $page,
+            'totalRecords' => $totalRecords,
+            'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([

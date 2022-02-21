@@ -23,4 +23,5 @@ $router->group(['prefix' => 'global'], function () use ($router) {
     $router->get('resend-confirmation-email/{code}', 'GlobalController@resendConfirmationEmail');
     $router->get('payment-methods', 'GlobalController@getPaymentMethods');
     $router->get('patient-status-list', 'GlobalController@getPatientStatusList');
+    $router->post('create-payment-intent', 'PaymentsController@createPaymentIntent');
 });

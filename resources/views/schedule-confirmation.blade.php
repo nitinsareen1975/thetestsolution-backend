@@ -19,23 +19,23 @@
 <table cellspacing="0" cellpadding="0">
     <tr>
         <td>Date: </td>
-        <th>{{ $scheduleDate }}</th>
+        <th style="text-align: left">{{ $scheduleDate }}</th>
     </tr>
     <tr>
         <td>Time: </td>
-        <th>{{ $scheduleTime }}</th>
+        <th style="text-align: left">{{ $scheduleTime }}</th>
     </tr>
     <tr>
         <td>Name: </td>
-        <th>{{ $labName }}</th>
+        <th style="text-align: left">{{ $labName }}</th>
     </tr>
     <tr>
         <td>Address: </td>
-        <th>{{ $labAddress }}</th>
+        <th style="text-align: left">{{ $labAddress }}</th>
     </tr>
     <tr>
         <td>Map Link: </td>
-        <th>&nbsp;<a href="{{ $mapsLink }}" target="_blank">Click Here</a></th>
+        <th style="text-align: left">&nbsp;<a href="{{ $mapsLink }}" target="_blank">Click Here</a></th>
     </tr>
 </table>
 </p>

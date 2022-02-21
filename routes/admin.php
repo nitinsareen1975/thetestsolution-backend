@@ -53,4 +53,14 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('patients', 'PatientController@add');
     $router->put('patients/{id}', 'PatientController@update');
     /* patients */
+
+    /* payments */
+    $router->get('payments', 'PaymentsController@getById');
+    $router->post('payments/refund', 'PaymentsController@refundTransaction');
+    /* payments */
+
+    /* my-account */
+    $router->put('update-profile', 'UsersController@updateProfile');
+    $router->put('update-password', 'UsersController@updatePassword');
+    /* my-account */
 });

@@ -102,6 +102,7 @@ class TestTypesController extends Controller
             }
         }
         $query->orderBy($sort, $order);
+        $totalRecords = count($query->get());
         if ($request->has('pagination') ) {
             $pagination = json_decode($request->get("pagination"), true);
             if(isset($pagination['page'])){
@@ -117,8 +118,8 @@ class TestTypesController extends Controller
         $testTypes = $query->get();
         
         $paginationArr = [
-            'count' => DB::table($this->tableTestTypes)->count(),
-            'currentPage' => $page,
+            'totalRecords' => $totalRecords,
+            'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([
