@@ -19,6 +19,9 @@ class GlobalController extends Controller
     protected $tableLabPricing = "lab_pricing";
     protected $tablePaymentMethods = "payment_methods";
     protected $tablePatientStatusList = "patient_status_list";
+    protected $tablePatients = "patients";
+    protected $tableTestTypeMethods = "test_type_methods";
+    protected $tableResults = "results";
 
     public function __construct()
     {
@@ -276,7 +279,7 @@ class GlobalController extends Controller
                 $labAssigned = Labs::findOrFail($patients->lab_assigned);
                 $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . $patients->confirmation_code . '.png';
                 $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . $patients->confirmation_code . '.png';
-                QrCode::format('png')->color(21, 106, 165)->size(100)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . $patients->confirmation_code, $qrCodeFile);
+                QrCode::format('png')->color(21, 106, 165)->size(100)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patients->id) . '/' . $patients->confirmation_code, $qrCodeFile);
 
                 $data = array(
                     'name' => $patients->firstname,
@@ -363,7 +366,7 @@ class GlobalController extends Controller
 
         $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . $patient->confirmation_code . '.png';
         $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . $patient->confirmation_code . '.png';
-        QrCode::format('png')->color(21, 106, 165)->size(100)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . $patient->confirmation_code, $qrCodeFile);
+        QrCode::format('png')->color(21, 106, 165)->size(100)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id) . '/' . $patient->confirmation_code, $qrCodeFile);
 
         $data = array(
             'name' => $patient->firstname,
@@ -403,5 +406,137 @@ class GlobalController extends Controller
             'data' =>  $data,
             'pagination' => []
         ], 200);
+    }
+
+    public function validateDOB(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'dob' => 'required',
+                'patientId' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+            $dob = $request->input("dob");
+            $patient_id = base64_decode($request->input("patientId"));
+            $data = DB::select("select * from {$this->tablePatients} where dob='{$dob}' and id={$patient_id}");
+            if (count($data) > 0) {
+                return response()->json(['status' => true, 'confirmationCode' => $data[0]->confirmation_code, 'message' => 'DOB validated.'], 200);
+            } else {
+                return response()->json(['status' => false, 'message' => 'No matching records were found.'], 409);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'No records found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+        }
+    }
+
+    public function getPatientReport(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'patientId' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+            $patient_id = base64_decode($request->input("patientId"));
+
+            $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.date_incorporated, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, ttm.name as test_type_method FROM {$this->tablePatients} p 
+            inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
+            inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
+            inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
+            inner join {$this->tableLabs} l on l.id = lp.lab_id 
+            inner join {$this->tableResults} r on r.patient_id = p.id and r.lab_id = l.id 
+            WHERE p.id = {$patient_id} and ttm.id = r.test_type_method_id";
+            $data = DB::select($sql);
+            if (count($data) > 0) {
+                return response()->json(['status' => true, 'data' => $data[0], 'message' => 'Success.'], 200);
+            } else {
+                return response()->json(['status' => false, 'message' => 'No matching records were found.'], 409);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'No records found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+        }
+    }
+
+    public function getPatientReportPDF(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'patientId' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+            $patient_id = base64_decode($request->input("patientId"));
+            $patient = Patients::findOrFail($patient_id);
+            $filename = "patient_" . $patient->confirmation_code . '.pdf';
+            $destinationPath = DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+            if (file_exists(base_path() . $destinationPath . $filename)) {
+                return response()->json(['status' => true, 'data' => ["url" => Url($destinationPath . $filename)], 'message' => 'Success.'], 200);
+            } else {
+                return response()->json(['status' => false, 'message' => 'Patient report is not generated yet.'], 200);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'No records found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+        }
+    }
+
+    public function getDashboardStats(Request $request)
+    { 
+        try {
+            $lab_id = !empty($request->input("lab_id")) ? $request->input("lab_id") : 0;
+            $sqlTotalResults = "select 
+            (SELECT COUNT(p.id) from {$this->tablePatients} p) as total_patients,
+            (select count(l.id) from {$this->tableLabs} l) as total_labs,
+            (select count(p1.id) from {$this->tablePatients} p1 where p1.progress_status = 1) as total_scheduled_patients, 
+            (select count(p2.id) from {$this->tablePatients} p2 where p2.progress_status = 3) as total_pending_results, 
+            (select count(p3.id) from {$this->tablePatients} p3 where p3.progress_status = 4) as total_completed_results";
+
+            $sqlTotalTestsByTop5Labs = "select l.name as lab_name, (select count(*) from {$this->tablePatients} p where p.lab_assigned = l.id) as total_tests from {$this->tableLabs} l order by total_tests desc limit 0,5";
+
+            $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 7 DAY";
+
+            $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p order by id desc limit 0, 5";
+
+            //for lab admins
+            if($lab_id > 0){
+                $sqlTotalResults = "select 
+                (SELECT COUNT(p.id) from {$this->tablePatients} p where p.lab_assigned='{$lab_id}') as total_patients,
+                (select count(l.id) from {$this->tableLabs} l) as total_labs,
+                (select count(p1.id) from {$this->tablePatients} p1 where p1.progress_status = 1 and p1.lab_assigned='{$lab_id}') as total_scheduled_patients, 
+                (select count(p2.id) from {$this->tablePatients} p2 where p2.progress_status = 3 and p2.lab_assigned='{$lab_id}') as total_pending_results, 
+                (select count(p3.id) from {$this->tablePatients} p3 where p3.progress_status = 4 and p3.lab_assigned='{$lab_id}') as total_completed_results";
+
+                $sqlTotalTestsByTop5Labs = "select l.name as lab_name, (select count(*) from {$this->tablePatients} p where p.lab_assigned = l.id) as total_tests from {$this->tableLabs} where l.id='{$lab_id}' l order by total_tests desc limit 0,5";
+
+                $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 7 DAY and p.lab_assigned='{$lab_id}'";
+
+                $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.lab_assigned='{$lab_id}' order by id desc limit 0, 5";
+            } 
+
+            $sqlTotalResults = DB::select($sqlTotalResults);
+            $sqlTotalTestsByTop5Labs = DB::select($sqlTotalTestsByTop5Labs);
+            $sqlPatientsByLabsPastWeek = DB::select($sqlPatientsByLabsPastWeek);
+            $sqlLatestAppointments = DB::select($sqlLatestAppointments);
+
+            $data = [
+                'total_patients' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_patients : 'N/A',
+                'total_labs' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_labs : 'N/A',
+                'total_scheduled_patients' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_scheduled_patients : 'N/A',
+                'total_pending_results' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_pending_results : 'N/A',
+                'total_completed_results' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_completed_results : 'N/A',
+                'total_tests_by_top5_labs' => isset($sqlTotalTestsByTop5Labs[0]) ? $sqlTotalTestsByTop5Labs : [],
+                'total_appointments_past_week' => isset($sqlPatientsByLabsPastWeek[0]) ? $sqlPatientsByLabsPastWeek : [],
+                'latest_appointments' => isset($sqlLatestAppointments[0]) ? $sqlLatestAppointments : []
+            ];
+            return response()->json(['status' => true, 'data' => $data, 'message' => 'Success.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'No data found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+        }
     }
 }

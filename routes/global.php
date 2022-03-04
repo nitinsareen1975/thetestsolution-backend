@@ -24,4 +24,11 @@ $router->group(['prefix' => 'global'], function () use ($router) {
     $router->get('payment-methods', 'GlobalController@getPaymentMethods');
     $router->get('patient-status-list', 'GlobalController@getPatientStatusList');
     $router->post('create-payment-intent', 'PaymentsController@createPaymentIntent');
+    $router->post('validate-patient-dob', 'GlobalController@validateDOB');
+    $router->post('get-patient-report', 'GlobalController@getPatientReport');
+    $router->post('get-patient-report-pdf', 'GlobalController@getPatientReportPDF');
+    $router->get('get-dashboard-stats', 'GlobalController@getDashboardStats');
+});
+$router->group(['prefix' => 'crons'], function () use ($router) {
+    $router->get('send-results-to-govt', 'CronsController@sendResultsToGovt');
 });

@@ -7,9 +7,12 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Patients;
 use App\Models\Payments;
 use App\Models\Labs;
+use App\Models\Roles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PatientController extends Controller
 {
@@ -19,6 +22,8 @@ class PatientController extends Controller
     protected string $tableLabPricing = "lab_pricing";
     protected string $tablePaymentMethods = "payment_methods";
     protected string $tablePatientStatusList = "patient_status_list";
+    protected string $tableResults = "results";
+    protected string $tableTestTypeMethods = "test_type_methods";
 
     public function __construct()
     {
@@ -92,7 +97,7 @@ class PatientController extends Controller
                 $labAssigned = Labs::findOrFail($patients->lab_assigned);
                 $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . $patients->confirmation_code . '.png';
                 $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . $patients->confirmation_code . '.png';
-                QrCode::format('png')->color(21, 106, 165)->size(100)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . $patients->confirmation_code, $qrCodeFile);
+                QrCode::format('png')->color(21, 106, 165)->size(100)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patients->id) . '/' . $patients->confirmation_code, $qrCodeFile);
 
                 $data = array(
                     'name' => $patients->firstname,
@@ -146,7 +151,7 @@ class PatientController extends Controller
 
     public function getAll(Request $request)
     {
-        $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tableLabPricing} lp on lp.test_type = tt.id where lp.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p WHERE 1=1 ";
+        $query = "SELECT p.*, p.lab_assigned as lab_assigned_id, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tableLabPricing} lp on lp.test_type = tt.id where lp.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p WHERE 1=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
@@ -157,8 +162,8 @@ class PatientController extends Controller
             if (count($filters) > 0) {
                 foreach ($filters as $column => $value) {
                     if (in_array($column, ["lab_assigned", "progress_status"])) {
-                        if(is_array($value)){
-                            $value = "'".implode("','",$value)."'";
+                        if (is_array($value)) {
+                            $value = "'" . implode("','", $value) . "'";
                         }
                         $query .= "AND p.{$column} IN ({$value}) ";
                     } else {
@@ -203,5 +208,274 @@ class PatientController extends Controller
             'data' =>  $labs,
             'pagination' => $paginationArr
         ], 200);
+    }
+
+    public function getPatientPricing($patientId, $pricingId, Request $request)
+    {
+        $query = "SELECT p.firstname, p.lastname, tt.name as test_type, tt.id as test_type_id FROM {$this->tableLabPricing} lp 
+        inner join {$this->tableLabs} l on l.id = lp.lab_id 
+        inner join {$this->tablePatients} p on p.lab_assigned = l.id 
+        inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
+        where p.id = {$patientId} and lp.id = {$pricingId}";
+        $data = DB::select($query);
+        if (count($data) == 0 || !isset($data[0]->test_type_id)) {
+            return response()->json(['status' => false, 'message' => 'Failed', 'data' =>  $data], 409);
+        }
+        $paginationArr = [];
+        return response()->json([
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $data[0],
+            'pagination' => $paginationArr
+        ], 200);
+    }
+
+    public function saveResults($patientId, Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'sample_collection_method' => 'required',
+                'result' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+            $sample_collection_method = $request->input("sample_collection_method");
+            $result = $request->input("result");
+            $result_text = $request->input("result_text");
+            $progress_status = $request->input("progress_status");
+            $lab_id = $request->input("lab_id");
+            $send_to_govt = $request->input("send_to_govt");
+            $confirmation_code = $request->input("confirmation_code");
+            $data = [
+                'patient_id' => $patientId,
+                'lab_id' => $lab_id,
+                'result' => $result,
+                'result_value' => $result_text,
+                'test_type_method_id' => $sample_collection_method,
+                'sent_to_govt' => $send_to_govt,
+                'qr_code' => $confirmation_code
+            ];
+            DB::table($this->tableResults)->insert($data);
+            DB::table($this->tablePatients)->where('id', $patientId)->update(['progress_status' => $progress_status]);
+            $patient = Patients::findOrFail($patientId);
+
+            $filename = "patient_" . $patient->confirmation_code . '.pdf';
+            $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+            $this->generatePatientReport($patient, $destinationPath.$filename);
+            if ($send_to_govt == 1) {
+                $this->sendResultsToGovt($patientId, $lab_id);
+            }
+            $data = array(
+                'name' => $patient->firstname,
+                'resultsLink' => env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id)
+            );
+            Mail::send('test-results-confirmation', $data, function ($message) use ($patient) {
+                $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Test results available - The Test Solution');
+                $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+            });
+            return response()->json(['status' => true, 'data' => [], 'message' => 'Patient result saved successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Result not updated.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+        }
+    }
+
+    public function sendResultsToGovt($patientId, $labId)
+    {
+        $patient = Patients::findOrFail($patientId);
+        if ($patient->id) {
+            $filename = "patient_" . $patient->confirmation_code . '.pdf';
+            $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+            if (!file_exists($destinationPath . $filename)) {
+                $this->generatePatientReport($patient, $destinationPath . $filename);
+            }
+
+            $labdata = Labs::findOrFail($labId);
+            if (!empty($labdata->ftp_host) && !empty($labdata->ftp_host) && !empty($labdata->ftp_host) && !empty($labdata->ftp_password) && !empty($labdata->ftp_folder_path)) {
+                $strServer = $labdata->ftp_host;
+                $strServerPort = $labdata->ftp_port;
+                $strServerUsername = $labdata->ftp_username;
+                $strServerPassword = $labdata->ftp_password;
+
+                $resConnection = ssh2_connect($strServer, $strServerPort);
+                if (ssh2_auth_password($resConnection, $strServerUsername, $strServerPassword)) {
+                    $resSFTP = ssh2_sftp($resConnection);
+                    $resFile = fopen("ssh2.sftp://{$resSFTP}/" . $labdata->ftp_folder_path . '/' . $filename, 'w');
+                    $srcFile = fopen($destinationPath . $filename, 'r');
+                    $writtenBytes = stream_copy_to_stream($srcFile, $resFile);
+                    fclose($resFile);
+                    fclose($srcFile);
+                }
+            }
+        }
+    }
+
+    public function sendResultsToGovtTest($patientId, $labId)
+    {
+        $patient = Patients::findOrFail($patientId);
+        if (!$patient->id) {
+            return response()->json(['status' => false, 'message' => 'Patient does not exist.'], 409);
+        }
+
+        $filename = "patient_" . $patient->confirmation_code . '.pdf';
+        $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+        //if (!file_exists($destinationPath . $filename)) {
+        $pdf = new Pdf();
+        $data = $this->getPatientReport($patient->id);
+        $viewData = [];
+        foreach ($data as $k => $v) {
+            if ($k == "logo" && empty($k)) {
+                $v = url("/public/images/logo.jpg");
+            }
+            if ($k == "logo") {
+                if ((stripos($v, '.jpg') === -1) && (stripos($v, '.jpeg') === -1)) {
+                    $v = url("/public/images/logo.jpg");
+                } else {
+                    $v = url("/") . str_replace("\\", "/", $v);
+                }
+            }
+            $viewData["report_{$k}"] = $v;
+        }
+        $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . $patient->confirmation_code . '.png';
+        $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . $patient->confirmation_code . '.png';
+        QrCode::format('png')->size(180)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id) . '/' . $patient->confirmation_code, $qrCodeFile);
+        $viewData["report_qrcode"] = $qrCodeUrl;
+        $pdf = PDF::loadView('patient-report', $viewData)->setPaper('a4', 'portrait');
+        $pdf->save($destinationPath . $filename);
+        //}
+
+        return response()->json(['status' => true, 'message' => 'Result uploaded.'], 200);
+
+        /* $labdata = Labs::findOrFail($labId);
+        if (!empty($labdata->ftp_host) && !empty($labdata->ftp_host) && !empty($labdata->ftp_host) && !empty($labdata->ftp_password) && !empty($labdata->ftp_folder_path)) {
+            $strServer = $labdata->ftp_host;
+            $strServerPort = $labdata->ftp_port;
+            $strServerUsername = $labdata->ftp_username;
+            $strServerPassword = $labdata->ftp_password;
+
+            $resConnection = ssh2_connect($strServer, $strServerPort);
+            if (ssh2_auth_password($resConnection, $strServerUsername, $strServerPassword)) {
+                $resSFTP = ssh2_sftp($resConnection);
+                $resFile = fopen("ssh2.sftp://{$resSFTP}/" . $labdata->ftp_folder_path . '/' . $filename, 'w');
+                $srcFile = fopen($destinationPath . $filename, 'r');
+                $writtenBytes = stream_copy_to_stream($srcFile, $resFile);
+                fclose($resFile);
+                fclose($srcFile);
+                return response()->json(['status' => true, 'message' => 'Result uploaded successfully.'], 200);
+            } else {
+                return response()->json(['status' => false, 'message' => 'Unable to connect to server.'], 409);
+            }
+        } */
+    }
+
+    public function getPatientReport($patient_id)
+    {
+        $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.logo, l.date_incorporated, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, ttm.name as test_type_method FROM {$this->tablePatients} p 
+            inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
+            inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
+            inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
+            inner join {$this->tableLabs} l on l.id = lp.lab_id 
+            inner join {$this->tableResults} r on r.patient_id = p.id and r.lab_id = l.id 
+            WHERE p.id = {$patient_id} and ttm.id = r.test_type_method_id";
+        $data = DB::select($sql);
+        return $data[0];
+    }
+
+    public function getCompletedPatients(Request $request)
+    {
+        $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value FROM {$this->tablePatients} p inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
+        /* filters, pagination and sorter */
+        $page = 1;
+        $sort = env("RESULTS_SORT", "id");
+        $order = env("RESULTS_ORDER", "desc");
+        $limit = env("RESULTS_PER_PAGE", 10);
+
+        $token = JWTAuth::getToken();
+        $tokenData = JWTAuth::getPayload($token)->toArray();
+        $role = Roles::find($tokenData['roles'])->toArray();
+        if ($request->has('filters')) {
+            $filters = json_decode($request->get("filters"), true);
+            if (count($filters) > 0) {
+                foreach ($filters as $column => $value) {
+                    if ($column == "lab_assigned" && stripos($role['name'], env("ADMINISTRATOR_ROLES")) > -1) {
+                        continue;
+                    }
+                    if (in_array($column, ["lab_assigned", "progress_status"])) {
+                        if (is_array($value)) {
+                            $value = "'" . implode("','", $value) . "'";
+                        }
+                        $query .= "AND p.{$column} IN ({$value}) ";
+                    } else {
+                        $query .= "AND p.{$column} LIKE '%{$value}%' ";
+                    }
+                }
+            }
+        }
+        if ($request->has('sorter')) {
+            $sorter = json_decode($request->get("sorter"), true);
+            if (isset($sorter['column'])) {
+                $sort = $sorter['column'];
+            }
+            if (isset($sorter['order'])) {
+                $order = $sorter['order'];
+            }
+        }
+
+        if (stripos($role['name'], env("ADMINISTRATOR_ROLES")) === -1) {
+            $query .= "AND p.lab_assigned IN ({$tokenData['lab_assigned']}) ";
+        }
+        $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
+        if ($request->has('pagination')) {
+            $pagination = json_decode($request->get("pagination"), true);
+            if (isset($pagination['page'])) {
+                $page = max(1, $pagination['page']);
+            }
+            if (isset($pagination['pageSize'])) {
+                $limit = max(env("RESULTS_PER_PAGE"), $pagination['pageSize']);
+            }
+            $offset = ($page - 1) * $limit;
+            $query .= "LIMIT {$offset}, {$limit} ";
+        }
+        /* filters, pagination and sorter */
+        $data = DB::select($query);
+
+        $paginationArr = [
+            'totalRecords' => $totalRecords,
+            'current' => $page,
+            'pageSize' => $limit
+        ];
+        return response()->json([
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $data,
+            'pagination' => $paginationArr
+        ], 200);
+    }
+
+    public function generatePatientReport($patient, $filePath){
+        $pdf = new Pdf();
+        $data = $this->getPatientReport($patient->id);
+        $viewData = [];
+        foreach ($data as $k => $v) {
+            if ($k == "logo" && empty($k)) {
+                $v = url("/public/images/logo.jpg");
+            }
+            if ($k == "logo") {
+                if ((stripos($v, '.jpg') === -1) && (stripos($v, '.jpeg') === -1)) {
+                    $v = url("/public/images/logo.jpg");
+                } else {
+                    $v = url("/") . str_replace("\\", "/", $v);
+                }
+            }
+            $viewData["report_{$k}"] = $v;
+        }
+        $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . $patient->confirmation_code . '.png';
+        $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . $patient->confirmation_code . '.png';
+        QrCode::format('png')->size(180)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id) . '/' . $patient->confirmation_code, $qrCodeFile);
+        $viewData["report_qrcode"] = $qrCodeUrl;
+        $pdf = PDF::loadView('patient-report', $viewData)->setPaper('a4', 'portrait');
+        $pdf->save($filePath);
     }
 }

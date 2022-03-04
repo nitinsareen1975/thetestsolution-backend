@@ -31,6 +31,8 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     /* test-types */
     $router->get('test-types', 'TestTypesController@getAll');
     $router->get('test-types/{id}', 'TestTypesController@get');
+    $router->get('test-type-methods/{id}', 'TestTypesController@getTestMethods');
+    $router->put('test-type-methods/{id}', 'TestTypesController@addUpdateTestMethods');
     $router->post('test-types', 'TestTypesController@add');
     $router->put('test-types/{id}', 'TestTypesController@update');
     /* test-types */
@@ -48,10 +50,14 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     /* files */
 
     /* patients */
+    $router->get('patients/completed', 'PatientController@getCompletedPatients');
     $router->get('patients', 'PatientController@getAll');
     $router->get('patients/{id}', 'PatientController@get');
     $router->post('patients', 'PatientController@add');
     $router->put('patients/{id}', 'PatientController@update');
+    $router->get('patients/pricing/{patientId}/{pricingId}', 'PatientController@getPatientPricing');
+    $router->post('patients/save-results/{patientId}', 'PatientController@saveResults');
+    $router->post('patients/save-results-test/{patientId}/{labId}', 'PatientController@sendResultsToGovtTest');
     /* patients */
 
     /* payments */
@@ -62,5 +68,6 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     /* my-account */
     $router->put('update-profile', 'UsersController@updateProfile');
     $router->put('update-password', 'UsersController@updatePassword');
+    $router->put('update-lab', 'LabsController@updateLabSettings');
     /* my-account */
 });

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 class TestTypesController extends Controller
 {
     protected string $tableTestTypes = 'test_types';
+    protected string $tableTestTypeMethods = 'test_type_methods';
 
     public function __construct()
     {
@@ -57,6 +58,7 @@ class TestTypesController extends Controller
             if(!empty($keys)){
                 $data = [];
                 foreach($keys as $key){
+                    if ($key == "test_type_methods") continue;
                     if(in_array($key, ['status'])){
                         $data[$key] = (boolean)$request->get($key);
                     } else {
@@ -128,5 +130,48 @@ class TestTypesController extends Controller
             'data' =>  $testTypes,
             'pagination' => $paginationArr
         ], 200);
+    }
+
+    public function getTestMethods($id, Request $request)
+    {
+        $query = DB::table($this->tableTestTypeMethods)->where('test_type_id', '=', $id);
+        $data = $query->get();
+        $paginationArr = [];
+        return response()->json([
+            'status' => true, 
+            'message' => 'Success', 
+            'data' =>  $data,
+            'pagination' => $paginationArr
+        ], 200);
+    }
+    
+    public function addUpdateTestMethods($id, Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'methods' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+
+            $methods = $request->input("methods");
+            if (count($methods) > 0) {
+                DB::table($this->tableTestTypeMethods)->where('test_type_id', $id)->delete();
+                $data = [];
+                foreach ($methods as $item) {
+                    $data[] = [
+                        'test_type_id' => $id,
+                        'name' => $item['name'],
+                        'code' => $item['code']
+                    ];
+                }
+                DB::table($this->tableTestTypeMethods)->insert($data);
+            }
+            return response()->json(['status' => true, 'data' => [], 'message' => 'Observation definitions updated successfully.'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Oberservation definitions not updated.'], 409);
+        }
     }
 }

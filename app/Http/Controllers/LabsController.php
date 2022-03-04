@@ -53,6 +53,10 @@ class LabsController extends Controller
             $lab->zip = $request->input('zip');
             $lab->geo_lat = $request->input('geo_lat');
             $lab->geo_long = $request->input('geo_long');
+            $lab->ftp_host = $request->input('ftp_host');
+            $lab->ftp_port = empty($request->input('ftp_port')) ? 80 : $request->input('ftp_port');
+            $lab->ftp_username = $request->input('ftp_username');
+            $lab->ftp_password = $request->input('ftp_password');
             $lab->status = empty($request->input('status')) ? 1 : (bool)$request->input('status');
             $lab->save();
             return response()->json(['status' => true, 'data' => $lab, 'message' => 'Lab created successfully.'], 201);
@@ -68,7 +72,7 @@ class LabsController extends Controller
             if (!empty($keys)) {
                 $data = [];
                 foreach ($keys as $key) {
-                    if($key == "lab_pricing") continue;
+                    if ($key == "lab_pricing") continue;
                     if (in_array($key, ['has_tax', 'has_compliance', 'status'])) {
                         $data[$key] = (bool)$request->get($key);
                     } else {
@@ -79,7 +83,7 @@ class LabsController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Lab updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Update Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
         }
     }
 
@@ -218,16 +222,18 @@ class LabsController extends Controller
                 $messages = $validator->errors();
                 return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
             }
-            
+
             $pricing = $request->input("pricing");
-            if(count($pricing) > 0){
+            if (count($pricing) > 0) {
                 DB::table($this->tableLabPricing)->where('lab_id', $id)->delete();
                 $data = [];
-                foreach($pricing as $item){
+                foreach ($pricing as $item) {
                     $data[] = [
                         'lab_id' => $id,
                         'price' => $item['price'],
                         'test_type' => $item['test_type'],
+                        'test_label' => $item['test_label'],
+                        'test_duration' => $item['test_duration'],
                         'test_codes' => $item['test_codes']
                     ];
                 }
@@ -236,6 +242,42 @@ class LabsController extends Controller
             return response()->json(['status' => true, 'data' => [], 'message' => 'Pricing updated successfully.'], 201);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'Pricing not updated.'], 409);
+        }
+    }
+
+    public function updateLabSettings(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string',
+            'email' => 'required|string',
+            'licence_number' => 'required|string'
+        ]);
+        if ($validator->fails()) {
+            $messages = $validator->errors();
+            return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+        }
+        try {
+            $lab_id = $request->input('lab_id');
+            if ($lab_id > 0) {
+                $keys = $request->keys();
+                if (!empty($keys)) {
+                    $data = [];
+                    foreach ($keys as $key) {
+                        if ($key == "lab_pricing" || $key == "lab_id") continue;
+                        if (in_array($key, ['has_tax', 'has_compliance', 'status'])) {
+                            $data[$key] = (bool)$request->get($key);
+                        } else {
+                            $data[$key] = $request->get($key);
+                        }
+                    }
+                    DB::table($this->tableLabs)->where('id', $lab_id)->update($data);
+                }
+                return response()->json(['status' => true, 'data' => [], 'message' => 'Settings updated successfully.'], 201);
+            } else {
+                return response()->json(['status' => false, 'message' => 'Error: Lab not found.'], 409);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Error: Update failed.'], 409);
         }
     }
 }

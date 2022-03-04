@@ -27,7 +27,7 @@ class PaymentsController extends Controller
                 "amount" => $pricing->price * 100,
                 "currency" => strtolower($pricing->currency),
                 "payment_method_types" => ['card'],
-                "description" => "Payment for scheduled screening"
+                "description" => "Payment for scheduled screening (".$request->input('customer_email').")"
             ];
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
             $paymentObj = $stripe->paymentIntents->create($paymentData);
