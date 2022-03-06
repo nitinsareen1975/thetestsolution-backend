@@ -1,1 +1,2 @@
 install php_imagick
+install php_ssh2

@@ -70,4 +70,10 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->put('update-password', 'UsersController@updatePassword');
     $router->put('update-lab', 'LabsController@updateLabSettings');
     /* my-account */
+
+    /* patients */
+    $router->get('reports', 'ReportsController@getAll');
+    $router->get('reports/download/{patientId}', 'ReportsController@download');
+    $router->get('reports/export/{format}', 'ReportsController@export');
+    /* patients */
 });

@@ -255,7 +255,8 @@ class PatientController extends Controller
                 'result_value' => $result_text,
                 'test_type_method_id' => $sample_collection_method,
                 'sent_to_govt' => $send_to_govt,
-                'qr_code' => $confirmation_code
+                'qr_code' => $confirmation_code,
+                'created_at' => date("Y-m-d H:i:s")
             ];
             DB::table($this->tableResults)->insert($data);
             DB::table($this->tablePatients)->where('id', $patientId)->update(['progress_status' => $progress_status]);
