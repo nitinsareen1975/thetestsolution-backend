@@ -38,7 +38,7 @@ class FilesController extends Controller
                     break;
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Upload Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Upload Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -56,7 +56,7 @@ class FilesController extends Controller
                     break;
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Upload Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Upload Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -74,7 +74,7 @@ class FilesController extends Controller
                 return response()->json(['status' => false, 'message' => 'File not found.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Update Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
     
@@ -91,7 +91,7 @@ class FilesController extends Controller
             DB::table($this->tableLabs)->where('id', $id)->update($data);
             return response()->json(['status' => true, 'message' => 'File removed.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Request Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Request Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
     
@@ -108,7 +108,7 @@ class FilesController extends Controller
             DB::table($this->tablePatients)->where('id', $id)->update($data);
             return response()->json(['status' => true, 'message' => 'File removed.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Request Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Request Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
     

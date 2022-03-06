@@ -111,7 +111,7 @@ class PatientController extends Controller
                 );
 
                 Mail::send('schedule-confirmation', $data, function ($message) use ($patients) {
-                    $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - The Test Solution');
+                    $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - Telestar Health');
                     $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
                 });
                 return response()->json(['status' => true, 'data' => $patients, 'message' => 'Registration successful.'], 201);
@@ -119,7 +119,7 @@ class PatientController extends Controller
                 return response()->json(['status' => false, 'message' => 'Payment Failed.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Registration Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Registration Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -258,7 +258,12 @@ class PatientController extends Controller
                 'qr_code' => $confirmation_code,
                 'created_at' => date("Y-m-d H:i:s")
             ];
-            DB::table($this->tableResults)->insert($data);
+            $exists = DB::select("select * from {$this->tableResults} where patient_id = {$patientId} and lab_id = {$lab_id}");
+            if(count($exists) > 0){
+                DB::table($this->tableResults)->where('id', $exists[0]->id)->update($data);
+            } else {
+                DB::table($this->tableResults)->insert($data);
+            }
             DB::table($this->tablePatients)->where('id', $patientId)->update(['progress_status' => $progress_status]);
             $patient = Patients::findOrFail($patientId);
 
@@ -273,12 +278,12 @@ class PatientController extends Controller
                 'resultsLink' => env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id)
             );
             Mail::send('test-results-confirmation', $data, function ($message) use ($patient) {
-                $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Test results available - The Test Solution');
+                $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Test results available - Telestar Health');
                 $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
             });
             return response()->json(['status' => true, 'data' => [], 'message' => 'Patient result saved successfully.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Result not updated.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Result not updated.', 'exception' => $e->getMessage()], 409);
         }
     }
 

@@ -3,5 +3,5 @@
 <p><strong><a href="{{ $resetLink }}" target="_blank">{{ $resetLink }}</a></strong></p>
 <p>
     Thank you,<br/>
-    The Test Solution team
+    Telestar Health team
 </p>

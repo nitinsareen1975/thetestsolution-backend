@@ -201,14 +201,14 @@ class GlobalController extends Controller
                             return response()->json(['status' => false, 'message' => 'File not found.'], 409);
                         }
                     } catch (\Exception $e) {
-                        return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
+                        return response()->json(['status' => false, 'message' => 'Update Failed.', 'exception' => $e->getMessage()], 409);
                     }
                     break;
                 default:
                     break;
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Upload Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Upload Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -293,7 +293,7 @@ class GlobalController extends Controller
                 );
 
                 Mail::send('schedule-confirmation', $data, function ($message) use ($patients) {
-                    $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - The Test Solution');
+                    $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - Telestar Health');
                     $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
                 });
                 return response()->json(['status' => true, 'data' => $patients, 'message' => 'Registration successful.'], 201);
@@ -301,7 +301,7 @@ class GlobalController extends Controller
                 return response()->json(['status' => false, 'message' => 'Payment Failed.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Registration Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Registration Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -379,7 +379,7 @@ class GlobalController extends Controller
             'mapsLink' => "https://maps.google.com/?q=" . $labAssigned->geo_lat . ',' . $labAssigned->geo_long
         );
         Mail::send('schedule-confirmation', $data, function ($message) use ($patient) {
-            $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Schedule Confirmation - The Test Solution');
+            $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Schedule Confirmation - Telestar Health');
             $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
         });
     }
@@ -428,7 +428,7 @@ class GlobalController extends Controller
                 return response()->json(['status' => false, 'message' => 'No matching records were found.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'No records found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'No records found.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -458,7 +458,7 @@ class GlobalController extends Controller
                 return response()->json(['status' => false, 'message' => 'No matching records were found.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'No records found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'No records found.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -482,7 +482,7 @@ class GlobalController extends Controller
                 return response()->json(['status' => false, 'message' => 'Patient report is not generated yet.'], 200);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'No records found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'No records found.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -536,7 +536,7 @@ class GlobalController extends Controller
             ];
             return response()->json(['status' => true, 'data' => $data, 'message' => 'Success.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'No data found.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'No data found.', 'exception' => $e->getMessage()], 409);
         }
     }
 }

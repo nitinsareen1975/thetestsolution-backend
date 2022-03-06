@@ -47,7 +47,7 @@ class TestTypesController extends Controller
             $testType->save();
             return response()->json(['status' => true, 'data' => $testType, 'message' => 'Test Type created successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Test Type Creation Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Test Type Creation Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -69,7 +69,7 @@ class TestTypesController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Test Type updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Update Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
     
@@ -171,7 +171,7 @@ class TestTypesController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Observation definitions updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Oberservation definitions not updated.'], 409);
+            return response()->json(['status' => false, 'message' => 'Oberservation definitions not updated.', 'exception' => $e->getMessage()], 409);
         }
     }
 }

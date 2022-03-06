@@ -51,7 +51,7 @@ class UsersController extends Controller
             $user->save();
             return response()->json(['status' => true, 'data' => $user, 'message' => 'User created successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'User Creation Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'User Creation Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -68,7 +68,7 @@ class UsersController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'User updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Update Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Update Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -217,7 +217,7 @@ class UsersController extends Controller
                 return response()->json(['status' => false, 'message' => 'Error: User not found.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Error: Update failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Error: Update failed.', 'exception' => $e->getMessage()], 409);
         }
     }
     
@@ -256,7 +256,7 @@ class UsersController extends Controller
                 return response()->json(['status' => false, 'message' => 'User not found.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Error: Update failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Error: Update failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 }

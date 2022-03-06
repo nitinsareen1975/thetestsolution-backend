@@ -41,6 +41,6 @@
 </p>
 <p>
     Thank you,<br />
-    The Test Solution team
+    Telestar Health team
 </p>
 </div>

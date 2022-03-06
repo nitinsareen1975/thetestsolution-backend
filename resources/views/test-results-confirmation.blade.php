@@ -4,6 +4,6 @@
 <p><a href="{{ $resultsLink }}" target="_blank">Click Here</a> to view your results.</p>
 <p>
     Thank you,<br />
-    The Test Solution team
+    Telestar Health team
 </p>
 </div>

@@ -61,7 +61,7 @@ class LabsController extends Controller
             $lab->save();
             return response()->json(['status' => true, 'data' => $lab, 'message' => 'Lab created successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Lab Creation Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Lab Creation Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -83,7 +83,7 @@ class LabsController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Lab updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Update Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Update Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -241,7 +241,7 @@ class LabsController extends Controller
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Pricing updated successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Pricing not updated.'], 409);
+            return response()->json(['status' => false, 'message' => 'Pricing not updated.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -277,7 +277,7 @@ class LabsController extends Controller
                 return response()->json(['status' => false, 'message' => 'Error: Lab not found.'], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Error: Update failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Error: Update failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 }

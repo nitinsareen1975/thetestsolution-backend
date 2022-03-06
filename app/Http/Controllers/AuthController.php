@@ -33,7 +33,7 @@ class AuthController extends Controller
             return response()->json(['user' => $user, 'message' => 'CREATED'], 201);
         } catch (\Exception $e) {
             //return error message
-            return response()->json(['message' => 'User Registration Failed!'], 409);
+            return response()->json(['message' => 'User Registration Failed!', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -94,7 +94,7 @@ class AuthController extends Controller
             );
             
             Mail::send('forgot-password', $data, function($message) use ($user) {
-                $message->to($user->email, $user->firstname.' '.$user->lastname)->subject('Reset you password - The Test Solution');
+                $message->to($user->email, $user->firstname.' '.$user->lastname)->subject('Reset you password - Telestar Health');
                 $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
             });
         }

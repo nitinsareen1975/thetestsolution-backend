@@ -33,7 +33,7 @@ class PaymentsController extends Controller
             $paymentObj = $stripe->paymentIntents->create($paymentData);
             return response()->json(['status' => true, 'data' => $paymentObj->client_secret], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Request Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
+            return response()->json(['status' => false, 'message' => 'Request Failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -105,7 +105,7 @@ class PaymentsController extends Controller
                 'data' =>  $data[0]
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'No record found.'], 409);
+            return response()->json(['status' => false, 'message' => 'No record found.', 'exception' => $e->getMessage()], 409);
         }
     }
 
@@ -128,7 +128,7 @@ class PaymentsController extends Controller
                 return response()->json(['status' => false, 'message' => "Refund request failed."], 409);
             }
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Request failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Request failed.', 'exception' => $e->getMessage()], 409);
         }
     }
 }
