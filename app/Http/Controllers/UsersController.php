@@ -105,7 +105,8 @@ class UsersController extends Controller
         $token = JWTAuth::getToken();
         $tokenData = JWTAuth::getPayload($token)->toArray();
         $role = Roles::find($tokenData['roles'])->toArray();
-        if (stripos($role['name'], env("ADMINISTRATOR_ROLES")) !== true) {
+        
+        if (stripos(env("ADMINISTRATOR_ROLES"), $role['name']) === -1) {
             $query .= "AND u.lab_assigned IN ({$tokenData['lab_assigned']}) AND u.roles NOT IN ('1') ";
         }
         if (isset($tokenData['uid']) && $tokenData['uid'] > 0) {

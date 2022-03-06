@@ -1,2 +1,4 @@
 install php_imagick
 install php_ssh2
+
+ALTER TABLE `labs` CHANGE `country` `country` VARCHAR(50) NULL DEFAULT NULL;

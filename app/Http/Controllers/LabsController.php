@@ -61,7 +61,7 @@ class LabsController extends Controller
             $lab->save();
             return response()->json(['status' => true, 'data' => $lab, 'message' => 'Lab created successfully.'], 201);
         } catch (\Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Lab Creation Failed.'], 409);
+            return response()->json(['status' => false, 'message' => 'Lab Creation Failed.' . (env("APP_ENV") !== "production") ? $e->getMessage() : ""], 409);
         }
     }
 
