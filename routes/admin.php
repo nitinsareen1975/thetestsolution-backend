@@ -71,9 +71,9 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->put('update-lab', 'LabsController@updateLabSettings');
     /* my-account */
 
-    /* patients */
+    /* reports */
     $router->get('reports', 'ReportsController@getAll');
     $router->get('reports/download/{patientId}', 'ReportsController@download');
     $router->get('reports/export/{format}', 'ReportsController@export');
-    /* patients */
+    /* reports */
 });
