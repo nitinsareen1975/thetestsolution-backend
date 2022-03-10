@@ -225,19 +225,33 @@ class LabsController extends Controller
 
             $pricing = $request->input("pricing");
             if (count($pricing) > 0) {
-                DB::table($this->tableLabPricing)->where('lab_id', $id)->delete();
-                $data = [];
-                foreach ($pricing as $item) {
-                    $data[] = [
-                        'lab_id' => $id,
-                        'price' => $item['price'],
-                        'test_type' => $item['test_type'],
-                        'test_label' => $item['test_label'],
-                        'test_duration' => $item['test_duration'],
-                        'test_codes' => $item['test_codes']
-                    ];
+                $existingPricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE lab_id = {$id}");
+
+                $postedExistingCount = 0;
+                $existingCount = count($existingPricing);
+                $postedExistingIds = [];
+                foreach($pricing as $price){
+                    if(isset($price["id"])){
+                        $postedExistingCount++;
+                        $postedExistingIds[] = $price["id"];
+                        DB::table($this->tableLabPricing)->where('id', $price["id"])->update($price);
+                    } else {
+                        $data = [
+                            'lab_id' => $id,
+                            'price' => $price['price'],
+                            'test_type' => $price['test_type'],
+                            'test_label' => $price['test_label'],
+                            'test_duration' => $price['test_duration'],
+                            'test_codes' => $price['test_codes']
+                        ];
+                        $rowId = DB::table($this->tableLabPricing)->insertGetId($data);
+                        $postedExistingIds[] = $rowId;
+                    }
                 }
-                DB::table($this->tableLabPricing)->insert($data);
+                if($postedExistingCount < $existingCount){
+                    $rowsNotToDelete = implode(",",$postedExistingIds);
+                    DB::statement("DELETE FROM {$this->tableLabPricing} WHERE lab_id = {$id} AND id NOT IN ($rowsNotToDelete)");
+                }
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Pricing updated successfully.'], 201);
         } catch (\Exception $e) {

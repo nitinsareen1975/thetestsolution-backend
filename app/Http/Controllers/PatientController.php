@@ -377,7 +377,7 @@ class PatientController extends Controller
 
     public function getPatientReport($patient_id)
     {
-        $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.logo, l.date_incorporated, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, ttm.name as test_type_method FROM {$this->tablePatients} p 
+        $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, ttm.name as test_type_method FROM {$this->tablePatients} p 
             inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
             inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
             inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 

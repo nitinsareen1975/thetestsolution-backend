@@ -539,4 +539,19 @@ class GlobalController extends Controller
             return response()->json(['status' => false, 'message' => 'No data found.', 'exception' => $e->getMessage()], 409);
         }
     }
+
+    public function printEmailTemplate(){
+        $viewData = [
+            'name' => '',
+            'username' => '',
+            'password' => '',
+            'appUrl' => '',
+            'scheduleTime' => '',
+            'labName' => '',
+            'labAddress' => '',
+            'mapsLink' => '',
+        ];
+        echo view('registration-confirmation', $viewData)->render();
+        die;
+    }
 }

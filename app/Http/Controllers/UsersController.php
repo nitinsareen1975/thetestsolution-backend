@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
+use App\Helpers\GlobalHelper;
+use Illuminate\Support\Facades\Mail;
 
 class UsersController extends Controller
 {
@@ -33,7 +35,7 @@ class UsersController extends Controller
         }
         try {
             $user = new Users;
-            $plainPassword = env("DEFAULT_USER_PASSWORD");
+            $plainPassword = GlobalHelper::randomPassword(8); //env("DEFAULT_USER_PASSWORD");
             $user->password = app('hash')->make($plainPassword);
             $user->firstname = $request->input('firstname');
             $user->lastname = $request->input('lastname');
@@ -49,6 +51,19 @@ class UsersController extends Controller
             $user->can_read_reports = $request->input('can_read_reports');
             $user->status = $request->input('status');
             $user->save();
+
+            $data = array(
+                'name' => $user->firstname,
+                'username' => $user->email,
+                'password' => $plainPassword,
+                'logoUrl' => url("/public/images/logo.jpg"),
+                'appUrl' => env("APP_FRONTEND_URL")
+            );
+
+            Mail::send('registration-confirmation', $data, function ($message) use ($user) {
+                $message->to($user->email, $user->firstname . ' ' . $user->lastname)->subject('Registration Confirmation - Telestar Health');
+                $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+            });
             return response()->json(['status' => true, 'data' => $user, 'message' => 'User created successfully.'], 201);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'User Creation Failed.', 'exception' => $e->getMessage()], 409);

@@ -28,6 +28,7 @@ $router->group(['prefix' => 'global'], function () use ($router) {
     $router->post('get-patient-report', 'GlobalController@getPatientReport');
     $router->post('get-patient-report-pdf', 'GlobalController@getPatientReportPDF');
     $router->get('get-dashboard-stats', 'GlobalController@getDashboardStats');
+    $router->get('print-template', 'GlobalController@printEmailTemplate');
 });
 $router->group(['prefix' => 'crons'], function () use ($router) {
     $router->get('send-results-to-govt', 'CronsController@sendResultsToGovt');

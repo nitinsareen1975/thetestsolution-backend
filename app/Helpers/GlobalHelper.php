@@ -33,4 +33,9 @@ class GlobalHelper
         $result = DB::select($sql);
         return $result;
     }
+
+    public static function randomPassword($length=7){
+        $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        return substr(str_shuffle(str_repeat($pool, 5)), 0, $length);
+    }
 }

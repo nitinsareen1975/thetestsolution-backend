@@ -114,8 +114,9 @@ class ReportsController extends Controller
     {
         //$query = "SELECT p.id, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state FROM {$this->tablePatients} p inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
 
-        $query = "SELECT p.id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.result, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, tt.test_type, tt.specimen_site_snomed as snomed, tt.name as test_name, tt.loinc, tt.fi_model, ttm.code as specimen_snomed, tt.specimen_site as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
+        $query = "SELECT p.id, l.licence_number, l.facility_id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.result, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, tt.test_type, tt.specimen_site_snomed as snomed, tt.name as test_name, tt.loinc, tt.fi_model, ttm.code as specimen_snomed, tt.specimen_site as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
         inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
+        inner join {$this->tableLabs} l on l.id = p.lab_assigned  
         inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
         inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
         inner join {$this->tableResults} r on r.patient_id = p.id 
@@ -167,8 +168,8 @@ class ReportsController extends Controller
                 $facilityName = str_replace(" ", "", $item->lab_assigned);
                 $rowData = [
                     $item->id,
-                    $item->lab_id,
-                    $item->confirmation_code,
+                    $item->facility_id,
+                    $item->licence_number,
                     '',
                     $item->id,
                     $item->lastname,
