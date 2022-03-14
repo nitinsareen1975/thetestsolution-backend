@@ -59,11 +59,14 @@ class UsersController extends Controller
                 'logoUrl' => url("/public/images/logo.jpg"),
                 'appUrl' => env("APP_FRONTEND_URL")
             );
-
-            Mail::send('registration-confirmation', $data, function ($message) use ($user) {
-                $message->to($user->email, $user->firstname . ' ' . $user->lastname)->subject('Registration Confirmation - Telestar Health');
-                $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
-            });
+            try{
+                Mail::send('registration-confirmation', $data, function ($message) use ($user) {
+                    $message->to($user->email, $user->firstname . ' ' . $user->lastname)->subject('Registration Confirmation - Telestar Health');
+                    $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+                });
+            } catch(\Exception $e){
+                return response()->json(['status' => false, 'message' => 'Email was not sent. Please try again later.', 'exception' => $e->getMessage()]);
+            }
             return response()->json(['status' => true, 'data' => $user, 'message' => 'User created successfully.'], 201);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'User Creation Failed.', 'exception' => $e->getMessage()], 409);

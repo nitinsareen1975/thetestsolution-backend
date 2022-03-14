@@ -16,12 +16,13 @@ class GlobalController extends Controller
 {
     protected $tableTestTypes = "test_types";
     protected $tableLabs = "labs";
-    protected $tableLabPricing = "lab_pricing";
     protected $tablePaymentMethods = "payment_methods";
     protected $tablePatientStatusList = "patient_status_list";
     protected $tablePatients = "patients";
     protected $tableTestTypeMethods = "test_type_methods";
     protected $tableResults = "results";
+    protected $tableCountries = "countries";
+    protected $tablePricing = "pricing";
 
     public function __construct()
     {
@@ -265,12 +266,12 @@ class GlobalController extends Controller
 
                 //save payment
                 $pricingId = $request->input('pricing_id');
-                $pricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE id = {$pricingId}");
+                $pricing = DB::select("SELECT * FROM {$this->tablePricing} WHERE id = {$pricingId}");
                 $pricing = $pricing[0];
                 $payments = new Payments;
                 $payments->patient_id = $patients->id;
                 $payments->transaction_id = $patients->transaction_id;
-                $payments->amount = $pricing->price;
+                $payments->amount = $pricing->retail_price;
                 $payments->payment_status = "completed";
                 $payments->currency = $pricing->currency;
                 $payments->save();
@@ -292,10 +293,14 @@ class GlobalController extends Controller
                     'mapsLink' => "https://maps.google.com/?q=" . $labAssigned->geo_lat . ',' . $labAssigned->geo_long
                 );
 
-                Mail::send('schedule-confirmation', $data, function ($message) use ($patients) {
-                    $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - Telestar Health');
-                    $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
-                });
+                try {
+                    Mail::send('schedule-confirmation', $data, function ($message) use ($patients) {
+                        $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - Telestar Health');
+                        $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+                    });
+                } catch (\Exception $e) {
+                    return response()->json(['status' => true, 'message' => 'Registration successful but email was not sent. Please contact support.', 'exception' => $e->getMessage()]);
+                }
                 return response()->json(['status' => true, 'data' => $patients, 'message' => 'Registration successful.'], 201);
             } else {
                 return response()->json(['status' => false, 'message' => 'Payment Failed.'], 409);
@@ -307,7 +312,7 @@ class GlobalController extends Controller
 
     public function getLabPricing($id, Request $request)
     {
-        $query = "SELECT l.*, t.name as test_name, t.estimated_hours, t.estimated_minutes, t.estimated_seconds FROM {$this->tableLabPricing} l INNER JOIN {$this->tableTestTypes} t ON t.id = l.test_type WHERE l.lab_id={$id} ";
+        $query = "SELECT l.*, t.name as test_name, t.estimated_hours, t.estimated_minutes, t.estimated_seconds FROM {$this->tablePricing} l INNER JOIN {$this->tableTestTypes} t ON t.id = l.test_type WHERE l.id={$id} ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
@@ -378,10 +383,14 @@ class GlobalController extends Controller
             'labAddress' => $labAssigned->street . ', ' . $labAssigned->city . ', ' . $labAssigned->state,
             'mapsLink' => "https://maps.google.com/?q=" . $labAssigned->geo_lat . ',' . $labAssigned->geo_long
         );
-        Mail::send('schedule-confirmation', $data, function ($message) use ($patient) {
-            $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Schedule Confirmation - Telestar Health');
-            $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
-        });
+        try {
+            Mail::send('schedule-confirmation', $data, function ($message) use ($patient) {
+                $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Schedule Confirmation - Telestar Health');
+                $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+            });
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Email was not sent. Please try again later.', 'exception' => $e->getMessage()]);
+        }
     }
 
     public function getPaymentMethods(Request $request)
@@ -445,10 +454,10 @@ class GlobalController extends Controller
             $patient_id = base64_decode($request->input("patientId"));
 
             $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.date_incorporated, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, ttm.name as test_type_method FROM {$this->tablePatients} p 
-            inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
+            inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
             inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
             inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
-            inner join {$this->tableLabs} l on l.id = lp.lab_id 
+            inner join {$this->tableLabs} l on l.id = p.lab_assigned  
             inner join {$this->tableResults} r on r.patient_id = p.id and r.lab_id = l.id 
             WHERE p.id = {$patient_id} and ttm.id = r.test_type_method_id";
             $data = DB::select($sql);
@@ -487,7 +496,7 @@ class GlobalController extends Controller
     }
 
     public function getDashboardStats(Request $request)
-    { 
+    {
         try {
             $lab_id = !empty($request->input("lab_id")) ? $request->input("lab_id") : 0;
             $sqlTotalResults = "select 
@@ -504,7 +513,7 @@ class GlobalController extends Controller
             $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p order by id desc limit 0, 5";
 
             //for lab admins
-            if($lab_id > 0){
+            if ($lab_id > 0) {
                 $sqlTotalResults = "select 
                 (SELECT COUNT(p.id) from {$this->tablePatients} p where p.lab_assigned='{$lab_id}') as total_patients,
                 (select count(l.id) from {$this->tableLabs} l) as total_labs,
@@ -517,7 +526,7 @@ class GlobalController extends Controller
                 $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 7 DAY and p.lab_assigned='{$lab_id}'";
 
                 $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.lab_assigned='{$lab_id}' order by id desc limit 0, 5";
-            } 
+            }
 
             $sqlTotalResults = DB::select($sqlTotalResults);
             $sqlTotalTestsByTop5Labs = DB::select($sqlTotalTestsByTop5Labs);
@@ -540,7 +549,8 @@ class GlobalController extends Controller
         }
     }
 
-    public function printEmailTemplate(){
+    public function printEmailTemplate()
+    {
         $viewData = [
             'name' => '',
             'username' => '',
@@ -553,5 +563,69 @@ class GlobalController extends Controller
         ];
         echo view('registration-confirmation', $viewData)->render();
         die;
+    }
+
+    public function getCurrencyCodes()
+    {
+        $codes = DB::select("SELECT distinct currency_code from {$this->tableCountries}");
+        return response()->json([
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $codes
+        ], 200);
+    }
+
+    public function getPricing(Request $request)
+    {
+        $query = "SELECT p.id, p.currency, p.retail_price, p.test_duration, p.name, p.status FROM {$this->tablePricing} p WHERE p.is_walkin_price=0 and p.status=1 ";
+        /* filters, pagination and sorter */
+        $page = 1;
+        $sort = env("RESULTS_SORT", "id");
+        $order = env("RESULTS_ORDER", "desc");
+        $limit = env("RESULTS_PER_PAGE", 10);
+        if ($request->has('filters')) {
+            $filters = json_decode($request->get("filters"), true);
+            if (count($filters) > 0) {
+                foreach ($filters as $column => $value) {
+                    $query .= "AND p.{$column} LIKE '%{$value}%' ";
+                }
+            }
+        }
+        if ($request->has('sorter')) {
+            $sorter = json_decode($request->get("sorter"), true);
+            if (isset($sorter['column'])) {
+                $sort = $sorter['column'];
+            }
+            if (isset($sorter['order'])) {
+                $order = $sorter['order'];
+            }
+        }
+        $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
+        if ($request->has('pagination')) {
+            $pagination = json_decode($request->get("pagination"), true);
+            if (isset($pagination['page'])) {
+                $page = max(1, $pagination['page']);
+            }
+            if (isset($pagination['pageSize'])) {
+                $limit = max(env("RESULTS_PER_PAGE"), $pagination['pageSize']);
+            }
+            $offset = ($page - 1) * $limit;
+            $query .= "LIMIT {$offset}, {$limit} ";
+        }
+        /* filters, pagination and sorter */
+        $results = DB::select($query);
+
+        $paginationArr = [
+            'totalRecords' => $totalRecords,
+            'current' => $page,
+            'pageSize' => $limit
+        ];
+        return response()->json([
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $results,
+            'pagination' => $paginationArr
+        ], 200);
     }
 }

@@ -20,7 +20,7 @@ class CronsController extends Controller
     protected string $tablePatients = 'patients';
     protected string $tableTestTypes = "test_types";
     protected string $tableLabs = "labs";
-    protected string $tableLabPricing = "lab_pricing";
+    protected string $tablePricing = "pricing";
     protected string $tablePaymentMethods = "payment_methods";
     protected string $tablePatientStatusList = "patient_status_list";
     protected string $tableResults = "results";
@@ -35,7 +35,7 @@ class CronsController extends Controller
     {
         exit();
         $query = "SELECT p.id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.result, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, tt.test_type, tt.specimen_site_snomed as snomed, tt.name as test_name, tt.loinc, tt.fi_model, ttm.code as specimen_snomed, tt.specimen_site as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
-        inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
+        inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
         inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
         inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
         inner join {$this->tableResults} r on r.patient_id = p.id 

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class LabsController extends Controller
 {
     protected string $tableLabs = 'labs';
-    protected string $tableLabPricing = 'lab_pricing';
+    protected string $tablePricing = 'pricing';
 
     public function __construct()
     {
@@ -149,7 +149,7 @@ class LabsController extends Controller
     /* lab-pricing */
     public function getPricing($id)
     {
-        $query = "SELECT * FROM {$this->tableLabPricing} WHERE lab_id = {$id}";
+        $query = "SELECT * FROM {$this->tablePricing} WHERE id = {$id}";
         $pricing = DB::select($query);
         if (count($pricing) > 0) {
             return response()->json(['status' => true, 'message' => 'Success', 'data' =>  $pricing], 200);
@@ -160,7 +160,7 @@ class LabsController extends Controller
 
     public function getAllPricing(Request $request)
     {
-        $query = "SELECT l.* FROM {$this->tableLabPricing} l WHERE 1=1 ";
+        $query = "SELECT l.* FROM {$this->tablePricing} l WHERE 1=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
@@ -225,7 +225,7 @@ class LabsController extends Controller
 
             $pricing = $request->input("pricing");
             if (count($pricing) > 0) {
-                $existingPricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE lab_id = {$id}");
+                $existingPricing = DB::select("SELECT * FROM {$this->tablePricing} WHERE id = {$id}");
 
                 $postedExistingCount = 0;
                 $existingCount = count($existingPricing);
@@ -234,7 +234,7 @@ class LabsController extends Controller
                     if(isset($price["id"])){
                         $postedExistingCount++;
                         $postedExistingIds[] = $price["id"];
-                        DB::table($this->tableLabPricing)->where('id', $price["id"])->update($price);
+                        DB::table($this->tablePricing)->where('id', $price["id"])->update($price);
                     } else {
                         $data = [
                             'lab_id' => $id,
@@ -244,13 +244,13 @@ class LabsController extends Controller
                             'test_duration' => $price['test_duration'],
                             'test_codes' => $price['test_codes']
                         ];
-                        $rowId = DB::table($this->tableLabPricing)->insertGetId($data);
+                        $rowId = DB::table($this->tablePricing)->insertGetId($data);
                         $postedExistingIds[] = $rowId;
                     }
                 }
                 if($postedExistingCount < $existingCount){
                     $rowsNotToDelete = implode(",",$postedExistingIds);
-                    DB::statement("DELETE FROM {$this->tableLabPricing} WHERE lab_id = {$id} AND id NOT IN ($rowsNotToDelete)");
+                    DB::statement("DELETE FROM {$this->tablePricing} WHERE lab_id = {$id} AND id NOT IN ($rowsNotToDelete)");
                 }
             }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Pricing updated successfully.'], 201);

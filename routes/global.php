@@ -14,7 +14,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 });
 $router->group(['prefix' => 'global'], function () use ($router) {
     $router->get('get-countries', 'GlobalController@getCountries');
-    $router->get('test-types', 'GlobalController@getAllTestTypes');
+    $router->get('tests', 'GlobalController@getAllTestTypes');
     $router->get('labs', 'GlobalController@findLabs');
     $router->get('labs/{id}', 'GlobalController@findLab');
     $router->post('upload/{key}', 'GlobalController@upload');
@@ -29,6 +29,8 @@ $router->group(['prefix' => 'global'], function () use ($router) {
     $router->post('get-patient-report-pdf', 'GlobalController@getPatientReportPDF');
     $router->get('get-dashboard-stats', 'GlobalController@getDashboardStats');
     $router->get('print-template', 'GlobalController@printEmailTemplate');
+    $router->get('currency-codes', 'GlobalController@getCurrencyCodes');
+    $router->get('pricing', 'GlobalController@getPricing');
 });
 $router->group(['prefix' => 'crons'], function () use ($router) {
     $router->get('send-results-to-govt', 'CronsController@sendResultsToGovt');

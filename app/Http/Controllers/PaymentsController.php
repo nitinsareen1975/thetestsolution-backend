@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class PaymentsController extends Controller
 {
-    protected $tableLabPricing = "lab_pricing";
+    protected $tablePricing = "pricing";
     protected $tablePayments = "payments";
     public function __construct()
     {
@@ -20,11 +20,11 @@ class PaymentsController extends Controller
     {
         try {
             $pricingId = $request->input('pricing_id');
-            $pricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE id = {$pricingId}");
+            $pricing = DB::select("SELECT * FROM {$this->tablePricing} WHERE id = {$pricingId}");
             $pricing = $pricing[0];
 
             $paymentData = [
-                "amount" => $pricing->price * 100,
+                "amount" => $pricing->retail_price * 100,
                 "currency" => strtolower($pricing->currency),
                 "payment_method_types" => ['card'],
                 "description" => "Payment for scheduled screening (".$request->input('customer_email').")"

@@ -4,7 +4,7 @@
     </div>
     <div class="content">
         <p>Hi {{ $name }},</p>
-        <p>Your account has been successfully created. Please use the credentials below to login to our portal:</p>
+        <p>Your account has been successfully created. Please use the credentials below to login to the portal:</p>
         <p>
         <table cellspacing="0" cellpadding="0">
             <tr>

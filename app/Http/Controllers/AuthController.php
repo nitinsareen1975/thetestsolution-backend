@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Users;
+use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
@@ -93,10 +94,14 @@ class AuthController extends Controller
                 'resetLink' => $resetLink
             );
             
-            Mail::send('forgot-password', $data, function($message) use ($user) {
-                $message->to($user->email, $user->firstname.' '.$user->lastname)->subject('Reset you password - Telestar Health');
-                $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
-            });
+            try{
+                Mail::send('forgot-password', $data, function($message) use ($user) {
+                    $message->to($user->email, $user->firstname.' '.$user->lastname)->subject('Reset you password - Telestar Health');
+                    $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+                });
+            } catch(Exception $e){
+                return response()->json(['status' => true, 'message' => 'Password reset but email was not sent. Please try again later.', 'exception' => $e->getMessage()]);
+            }
         }
         return response()->json(['status' => true, 'message' => 'Email has been sent to your provided email address.']);
     }

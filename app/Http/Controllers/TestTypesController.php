@@ -40,9 +40,8 @@ class TestTypesController extends Controller
             $testType->fi_test_name = $request->input('fi_test_name');
             $testType->fi_test_type = $request->input('fi_test_type');
             $testType->fi_model = $request->input('fi_model');
-            $testType->estimated_hours = empty($request->input('estimated_hours')) ? '00' : sprintf('%02d', $request->input('estimated_hours'));
-            $testType->estimated_minutes = empty($request->input('estimated_minutes')) ? '00' : sprintf('%02d', $request->input('estimated_minutes'));
-            $testType->estimated_seconds = empty($request->input('estimated_seconds')) ? '00' : sprintf('%02d', $request->input('estimated_seconds'));
+            $testType->observation_methods = $request->input('observation_methods');
+            $testType->is_rapid_test = empty($request->input('is_rapid_test')) ? 0 : (boolean)$request->input('is_rapid_test');
             $testType->status = empty($request->input('status')) ? 0 : (boolean)$request->input('status');
             $testType->save();
             return response()->json(['status' => true, 'data' => $testType, 'message' => 'Test Type created successfully.'], 201);
@@ -80,54 +79,54 @@ class TestTypesController extends Controller
 
     public function getAll(Request $request)
     {
-        $query = DB::table($this->tableTestTypes); 
+        $query = "SELECT t.*, (select name from test_type_names where id = t.test_type) as test_type FROM {$this->tableTestTypes} t WHERE 1=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
         $order = env("RESULTS_ORDER", "desc");
         $limit = env("RESULTS_PER_PAGE", 10);
-        if ($request->has('filters') ) {
+        if ($request->has('filters')) {
             $filters = json_decode($request->get("filters"), true);
-            if(count($filters) > 0){
-                foreach($filters as $column => $value){
-                    $query->where($column, 'like', "%{$value}%");
+            if (count($filters) > 0) {
+                foreach ($filters as $column => $value) {
+                    $query .= "AND t.{$column} LIKE '%{$value}%' ";
                 }
             }
         }
         if ($request->has('sorter')) {
             $sorter = json_decode($request->get("sorter"), true);
-            if(isset($sorter['column'])){
+            if (isset($sorter['column'])) {
                 $sort = $sorter['column'];
             }
-            if(isset($sorter['order'])){
+            if (isset($sorter['order'])) {
                 $order = $sorter['order'];
             }
         }
-        $query->orderBy($sort, $order);
-        $totalRecords = count($query->get());
-        if ($request->has('pagination') ) {
+        $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
+        if ($request->has('pagination')) {
             $pagination = json_decode($request->get("pagination"), true);
-            if(isset($pagination['page'])){
+            if (isset($pagination['page'])) {
                 $page = max(1, $pagination['page']);
             }
-            if(isset($pagination['pageSize'])){
+            if (isset($pagination['pageSize'])) {
                 $limit = max(env("RESULTS_PER_PAGE"), $pagination['pageSize']);
             }
             $offset = ($page - 1) * $limit;
-            $query->skip($offset)->take($limit);
+            $query .= "LIMIT {$offset}, {$limit} ";
         }
         /* filters, pagination and sorter */
-        $testTypes = $query->get();
-        
+        $data = DB::select($query);
+
         $paginationArr = [
             'totalRecords' => $totalRecords,
             'current' => $page,
             'pageSize' => $limit
         ];
         return response()->json([
-            'status' => true, 
-            'message' => 'Success', 
-            'data' =>  $testTypes,
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $data,
             'pagination' => $paginationArr
         ], 200);
     }

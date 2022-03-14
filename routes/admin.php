@@ -31,18 +31,31 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     /* test-types */
     $router->get('test-types', 'TestTypesController@getAll');
     $router->get('test-types/{id}', 'TestTypesController@get');
-    $router->get('test-type-methods/{id}', 'TestTypesController@getTestMethods');
-    $router->put('test-type-methods/{id}', 'TestTypesController@addUpdateTestMethods');
     $router->post('test-types', 'TestTypesController@add');
     $router->put('test-types/{id}', 'TestTypesController@update');
     /* test-types */
     
-    /* tests */
-    $router->get('tests', 'TestsController@getAll');
-    $router->get('tests/{id}', 'TestsController@get');
-    $router->post('tests', 'TestsController@add');
-    $router->put('tests/{id}', 'TestsController@update');
-    /* tests */
+    /* test-type-methods */
+    $router->get('test-type-methods', 'TestTypeMethodsController@getAll');
+    $router->get('test-type-methods/{id}', 'TestTypeMethodsController@get');
+    $router->post('test-type-methods', 'TestTypeMethodsController@add');
+    $router->put('test-type-methods/{id}', 'TestTypeMethodsController@update');
+    $router->get('test-type-methods-for-patient/{patientId}', 'TestTypeMethodsController@getTestTypeMethodsForPatient');
+    /* test-type-methods */
+
+    /* test-result-types */
+    $router->get('test-result-types', 'TestResultTypesController@getAll');
+    $router->get('test-result-types/{id}', 'TestResultTypesController@get');
+    $router->post('test-result-types', 'TestResultTypesController@add');
+    $router->put('test-result-types/{id}', 'TestResultTypesController@update');
+    /* test-result-types */
+    
+    /* test-type-names */
+    $router->get('test-type-names', 'TestTypeNamesController@getAll');
+    $router->get('test-type-names/{id}', 'TestTypeNamesController@get');
+    $router->post('test-type-names', 'TestTypeNamesController@add');
+    $router->put('test-type-names/{id}', 'TestTypeNamesController@update');
+    /* test-type-names */
     
     /* files */
     $router->post('upload/{key}/{id}', 'FilesController@upload');
@@ -76,4 +89,12 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->get('reports/download/{patientId}', 'ReportsController@download');
     $router->get('reports/export/{format}', 'ReportsController@export');
     /* reports */
+
+    
+    /* pricing */
+    $router->get('pricing', 'PricingController@getAll');
+    $router->get('pricing/{id}', 'PricingController@get');
+    $router->post('pricing', 'PricingController@add');
+    $router->put('pricing/{id}', 'PricingController@update');
+    /* pricing */
 });

@@ -19,7 +19,7 @@ class PatientController extends Controller
     protected string $tablePatients = 'patients';
     protected string $tableTestTypes = "test_types";
     protected string $tableLabs = "labs";
-    protected string $tableLabPricing = "lab_pricing";
+    protected string $tablePricing = "pricing";
     protected string $tablePaymentMethods = "payment_methods";
     protected string $tablePatientStatusList = "patient_status_list";
     protected string $tableResults = "results";
@@ -83,12 +83,12 @@ class PatientController extends Controller
 
                 //save payment
                 $pricingId = $request->input('pricing_id');
-                $pricing = DB::select("SELECT * FROM {$this->tableLabPricing} WHERE id = {$pricingId}");
+                $pricing = DB::select("SELECT * FROM {$this->tablePricing} WHERE id = {$pricingId}");
                 $pricing = $pricing[0];
                 $payments = new Payments;
                 $payments->patient_id = $patients->id;
                 $payments->transaction_id = $patients->transaction_id;
-                $payments->amount = $pricing->price;
+                $payments->amount = $pricing->retail_price;
                 $payments->payment_status = "completed";
                 $payments->currency = $pricing->currency;
                 $payments->save();
@@ -110,10 +110,14 @@ class PatientController extends Controller
                     'mapsLink' => "https://maps.google.com/?q=" . $labAssigned->geo_lat . ',' . $labAssigned->geo_long
                 );
 
-                Mail::send('schedule-confirmation', $data, function ($message) use ($patients) {
-                    $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - Telestar Health');
-                    $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
-                });
+                try {
+                    Mail::send('schedule-confirmation', $data, function ($message) use ($patients) {
+                        $message->to($patients->email, $patients->firstname . ' ' . $patients->lastname)->subject('Schedule Confirmation - Telestar Health');
+                        $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+                    });
+                } catch (\Exception $e) {
+                    return response()->json(['status' => false, 'message' => 'Email was not sent. Please try again later.', 'exception' => $e->getMessage()]);
+                }
                 return response()->json(['status' => true, 'data' => $patients, 'message' => 'Registration successful.'], 201);
             } else {
                 return response()->json(['status' => false, 'message' => 'Payment Failed.'], 409);
@@ -151,7 +155,7 @@ class PatientController extends Controller
 
     public function getAll(Request $request)
     {
-        $query = "SELECT p.*, p.lab_assigned as lab_assigned_id, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tableLabPricing} lp on lp.test_type = tt.id where lp.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p WHERE 1=1 ";
+        $query = "SELECT p.*, p.lab_assigned as lab_assigned_id, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tablePricing} lp on lp.test_type = tt.id where lp.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p WHERE 1=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
@@ -212,9 +216,13 @@ class PatientController extends Controller
 
     public function getPatientPricing($patientId, $pricingId, Request $request)
     {
-        $query = "SELECT p.firstname, p.lastname, tt.name as test_type, tt.id as test_type_id FROM {$this->tableLabPricing} lp 
-        inner join {$this->tableLabs} l on l.id = lp.lab_id 
+        /* $query = "SELECT p.firstname, p.lastname, tt.name as test_type, tt.id as test_type_id FROM {$this->tablePricing} lp 
+        inner join {$this->tableLabs} l on l.id = p.lab_assigned  
         inner join {$this->tablePatients} p on p.lab_assigned = l.id 
+        inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
+        where p.id = {$patientId} and lp.id = {$pricingId}"; */
+        $query = "SELECT p.firstname, p.lastname, tt.name as test_type, (select ttm.name from {$this->tableTestTypeMethods} ttm where ttm.id=p.specimen_collection_method) as specimen_collection_method, (select ttm.id from {$this->tableTestTypeMethods} ttm where ttm.id=p.specimen_collection_method) as specimen_collection_method_id, tt.id as test_type_id FROM {$this->tablePatients} p 
+        inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
         inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
         where p.id = {$patientId} and lp.id = {$pricingId}";
         $data = DB::select($query);
@@ -259,7 +267,7 @@ class PatientController extends Controller
                 'created_at' => date("Y-m-d H:i:s")
             ];
             $exists = DB::select("select * from {$this->tableResults} where patient_id = {$patientId} and lab_id = {$lab_id}");
-            if(count($exists) > 0){
+            if (count($exists) > 0) {
                 DB::table($this->tableResults)->where('id', $exists[0]->id)->update($data);
             } else {
                 DB::table($this->tableResults)->insert($data);
@@ -269,7 +277,7 @@ class PatientController extends Controller
 
             $filename = "patient_" . $patient->confirmation_code . '.pdf';
             $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
-            $this->generatePatientReport($patient, $destinationPath.$filename);
+            $this->generatePatientReport($patient, $destinationPath . $filename);
             if ($send_to_govt == 1) {
                 $this->sendResultsToGovt($patientId, $lab_id);
             }
@@ -277,10 +285,14 @@ class PatientController extends Controller
                 'name' => $patient->firstname,
                 'resultsLink' => env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id)
             );
-            Mail::send('test-results-confirmation', $data, function ($message) use ($patient) {
-                $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Test results available - Telestar Health');
-                $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
-            });
+            try {
+                Mail::send('test-results-confirmation', $data, function ($message) use ($patient) {
+                    $message->to($patient->email, $patient->firstname . ' ' . $patient->lastname)->subject('Test results available - Telestar Health');
+                    $message->from(env("MAIL_FROM_ADDRESS"), env("MAIL_FROM_NAME"));
+                });
+            } catch (\Exception $e) {
+                return response()->json(['status' => false, 'message' => 'Email was not sent. Please try again later.', 'exception' => $e->getMessage()]);
+            }
             return response()->json(['status' => true, 'data' => [], 'message' => 'Patient result saved successfully.'], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'Result not updated.', 'exception' => $e->getMessage()], 409);
@@ -377,20 +389,19 @@ class PatientController extends Controller
 
     public function getPatientReport($patient_id)
     {
-        $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, ttm.name as test_type_method FROM {$this->tablePatients} p 
-            inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id 
+        $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tablePatients} p 
+            inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
             inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
-            inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
-            inner join {$this->tableLabs} l on l.id = lp.lab_id 
+            inner join {$this->tableLabs} l on l.id = p.lab_assigned  
             inner join {$this->tableResults} r on r.patient_id = p.id and r.lab_id = l.id 
-            WHERE p.id = {$patient_id} and ttm.id = r.test_type_method_id";
+            WHERE p.id = {$patient_id}";
         $data = DB::select($sql);
         return $data[0];
     }
 
     public function getCompletedPatients(Request $request)
     {
-        $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value FROM {$this->tablePatients} p inner join {$this->tableLabPricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
+        $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value FROM {$this->tablePatients} p inner join {$this->tablePricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
@@ -460,7 +471,8 @@ class PatientController extends Controller
         ], 200);
     }
 
-    public function generatePatientReport($patient, $filePath){
+    public function generatePatientReport($patient, $filePath)
+    {
         $pdf = new Pdf();
         $data = $this->getPatientReport($patient->id);
         $viewData = [];

@@ -3,3 +3,20 @@ install php_ssh2
 
 ALTER TABLE `labs` CHANGE `country` `country` VARCHAR(50) NULL DEFAULT NULL;
 ALTER TABLE `labs` ADD `facility_id` VARCHAR(100) NULL AFTER `licence_number`;
+
+TRUNCATE lab_pricing;
+TRUNCATE patients;
+TRUNCATE payments;
+TRUNCATE pricing;
+TRUNCATE results;
+TRUNCATE result_types;
+TRUNCATE test_types;
+TRUNCATE test_type_methods;
+TRUNCATE test_type_names;
+
+ALTER TABLE `test_types` ADD `is_rapid_test` INT(2) NOT NULL DEFAULT '0' AFTER `units`;
+ALTER TABLE `test_types` ADD `observation_methods` VARCHAR(100) NULL AFTER `is_rapid_test`;
+ALTER TABLE `test_type_methods` DROP `test_type_id`;
+ALTER TABLE `test_type_methods` ADD `status` INT(2) NOT NULL DEFAULT '1' AFTER `updated_at`;
+ALTER TABLE `pricing` ADD `is_walkin_price` INT(2) NOT NULL DEFAULT '0' AFTER `test_duration`;
+ALTER TABLE `patients` ADD `specimen_collection_method` VARCHAR(100) NULL AFTER `confirmation_code`;
