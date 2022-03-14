@@ -119,9 +119,9 @@
                 <td style="width: 50%">
                     <div style="float: right; text-align:right">
                         <p>
-                            Basedon Revisions to Rule 64D-3.029<br />
-                            Florida AdministrativeCode<br />
-                            Effective October 20, 2016<br />
+                        {{ $report_lab_name }}<br />
+                        {{ $report_lab_street }}<br />
+                        {{ $report_lab_city }}, {{ $report_lab_state }}, {{ $report_lab_zip }}
                         </p>
                     </div>
                 </td>
@@ -150,23 +150,28 @@
             <tr>
                 <td colspan="2">
                     <table style="max-width:100%;width:100%;">
-                        <td><strong>Account#</strong> 1659461101</td>
-                        <td><strong>Refer#</strong> 51209</td>
-                        <td><strong>Passport#</strong> AAB115708</td>
+                        <td><strong>Account#</strong> {{ $report_id }}</td>
+                        <td>&nbsp;</td>
+                        @if($report_identifier_type =='Passport') 
+                            <td style="text-align: right;"><strong>Passport#</strong> {{ $report_identifier }}</td>
+                        @else
+                            <td style="text-align: right;"><strong>DL#</strong> {{ $report_identifier }}</td>
+                        @endif
                     </table>
                 </td>
             </tr>
             <tr>
                 <td style="width: 50%;">
                     <div class="labAddress">
-                        INTI FERNANDEZ MD<br>2100 NW 42 AVE<br>MIAMI, Florida 33126
+                        {{ $report_lab_name }}<br />
+                        {{ $report_lab_street }}<br />
+                        {{ $report_lab_city }}, {{ $report_lab_state }}, {{ $report_lab_zip }}
                     </div>
                     <div class="labTel">
                         <strong>TEL:</strong> {{ $report_lab_phone }}
                         <br>
-                        <strong>FAX:</strong> 305-869-1167
+                        <strong>EMAIL:</strong> {{ $report_lab_email }}
                     </div>
-                    <div><strong>Doctor:</strong> INTI FERNANDEZ MD</div>
                 </td>
                 <td style="width: 50%;">
                     <div class="patient-info">
@@ -181,8 +186,8 @@
                                 <strong>SEX:</strong> {{ $report_gender }}
                             </div>
                         </div>
-                        <div><strong>COLLECTED:</strong> {{ $report_specimen_collection_date }}</div>
-                        <div><strong>REPORTED:</strong> {{ $report_result_date }}</div>
+                        <div><strong>COLLECTED:</strong> {{ date('m/d/Y', strtotime($report_specimen_collection_date)) }}</div>
+                        <div><strong>REPORTED:</strong> {{ date('m/d/Y', strtotime($report_result_date)) }}</div>
                     </div>
                 </td>
             </tr>
@@ -203,19 +208,17 @@
                                 <strong>Method:</strong> {{ $report_test_type_name }}
                                 </div>
                                 <div class="list">
-                                <strong>Procedure:</strong> NAAT-RNA
-                                </div>
-                                <div class="list">
-                                <strong>Specimen Type:</strong> {{ $report_test_type_method }}
+                                <strong>Procedure:</strong> {{ $report_test_type_method }}
                                 </div>
                             </td>
                             <td>
                                 <div class="list">
-                                <strong>Testing Platform:</strong> Cepheid GeneXpert Xpress 
+                                <strong>Result:</strong> {{ $report_result }}
                                 </div>
                                 <div class="list">
-                                    {{ $report_result }} For SARS-CoV-2
+                                <strong>SNOMED:</strong> {{ $report_result_snomed }}
                                 </div>
+                                
                             </td>
                         </tr>
                     </tbody>
@@ -227,16 +230,17 @@
             <table style="max-width:100%;width:100%;">
                 <tr>
                     <td>
-                            <div class="doctorDetails">
+                        <div class="doctorDetails">
                             <div class="signature">
-                                DR. B.N.Datta
-                            </div>
-                            Clinical Director
+                                 
+                            </div> 
                         </div>
                     </td>
                     <td style="text-align: right;">
-                        <div class="labStamp" style="text-align: center;display: inline-block;">
-                            Inti Fernando: M.D.<br>Miami International Airport<br>Ground Lave!<br>Miami. FL 33142 
+                        <div class="labStamp" style="text-align: right;display: inline-block;">
+                        {{ $report_lab_name }}<br />
+                        {{ $report_lab_street }}<br />
+                        {{ $report_lab_city }}, {{ $report_lab_state }}, {{ $report_lab_zip }}
                         </div>
                     </td>
                 </tr>

@@ -70,12 +70,13 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->put('patients/{id}', 'PatientController@update');
     $router->get('patients/pricing/{patientId}/{pricingId}', 'PatientController@getPatientPricing');
     $router->post('patients/save-results/{patientId}', 'PatientController@saveResults');
-    $router->post('patients/save-results-test/{patientId}/{labId}', 'PatientController@sendResultsToGovtTest');
+    $router->post('patients/save-results-test/{patientId}', 'PatientController@generateSampleTestReport');
     /* patients */
 
     /* payments */
     $router->get('payments', 'PaymentsController@getById');
     $router->post('payments/refund', 'PaymentsController@refundTransaction');
+    $router->get('payment-methods', 'PaymentsController@getPaymentMethods');
     /* payments */
 
     /* my-account */

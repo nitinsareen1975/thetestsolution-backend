@@ -10,6 +10,7 @@ class PaymentsController extends Controller
 {
     protected $tablePricing = "pricing";
     protected $tablePayments = "payments";
+    protected $tablePaymentMethods = "payment_methods";
     public function __construct()
     {
         Stripe::setApiKey(env('STRIPE_SECRET'));
@@ -130,5 +131,60 @@ class PaymentsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'Request failed.', 'exception' => $e->getMessage()], 409);
         }
+    }
+
+    public function getPaymentMethods(Request $request){
+        $query = "SELECT * FROM {$this->tablePaymentMethods} WHERE 1=1 ";
+        /* filters, pagination and sorter */
+        $page = 1;
+        $sort = env("RESULTS_SORT", "id");
+        $order = env("RESULTS_ORDER", "desc");
+        $limit = env("RESULTS_PER_PAGE", 10);
+
+        if ($request->has('filters')) {
+            $filters = json_decode($request->get("filters"), true);
+            if (count($filters) > 0) {
+                foreach ($filters as $column => $value) {
+                    $query .= "AND {$column} LIKE '%{$value}%' ";
+                }
+            }
+        }
+        if ($request->has('sorter')) {
+            $sorter = json_decode($request->get("sorter"), true);
+            if (isset($sorter['column'])) {
+                $sort = $sorter['column'];
+            }
+            if (isset($sorter['order'])) {
+                $order = $sorter['order'];
+            }
+        }
+
+        $query .= "ORDER BY {$sort} {$order} ";
+        $totalRecords = count(DB::select($query));
+        if ($request->has('pagination')) {
+            $pagination = json_decode($request->get("pagination"), true);
+            if (isset($pagination['page'])) {
+                $page = max(1, $pagination['page']);
+            }
+            if (isset($pagination['pageSize'])) {
+                $limit = max(env("RESULTS_PER_PAGE"), $pagination['pageSize']);
+            }
+            $offset = ($page - 1) * $limit;
+            $query .= "LIMIT {$offset}, {$limit} ";
+        }
+        /* filters, pagination and sorter */
+        $data = DB::select($query);
+
+        $paginationArr = [
+            'totalRecords' => $totalRecords,
+            'current' => $page,
+            'pageSize' => $limit
+        ];
+        return response()->json([
+            'status' => true,
+            'message' => 'Success',
+            'data' =>  $data,
+            'pagination' => $paginationArr
+        ], 200);
     }
 }

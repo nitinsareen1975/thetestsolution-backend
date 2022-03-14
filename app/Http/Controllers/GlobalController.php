@@ -577,7 +577,7 @@ class GlobalController extends Controller
 
     public function getPricing(Request $request)
     {
-        $query = "SELECT p.id, p.currency, p.retail_price, p.test_duration, p.name, p.status FROM {$this->tablePricing} p WHERE p.is_walkin_price=0 and p.status=1 ";
+        $query = "SELECT p.id, p.currency, p.retail_price, p.test_duration, p.name, p.status FROM {$this->tablePricing} p WHERE p.status=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");

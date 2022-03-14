@@ -24,6 +24,8 @@ class PatientController extends Controller
     protected string $tablePatientStatusList = "patient_status_list";
     protected string $tableResults = "results";
     protected string $tableTestTypeMethods = "test_type_methods";
+    protected string $tableResultTypes = "result_types";
+    protected string $tableCountries = "countries";
 
     public function __construct()
     {
@@ -155,7 +157,7 @@ class PatientController extends Controller
 
     public function getAll(Request $request)
     {
-        $query = "SELECT p.*, p.lab_assigned as lab_assigned_id, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tablePricing} lp on lp.test_type = tt.id where lp.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p WHERE 1=1 ";
+        $query = "SELECT p.*, p.lab_assigned as lab_assigned_id, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, pr.retail_price, (SELECT currency_symbol from {$this->tableCountries} where currency_code = pr.currency limit 0,1) as currency, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tablePricing} lp on lp.test_type = tt.id where lp.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p inner join {$this->tablePricing} pr on pr.id = p.pricing_id WHERE 1=1 ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
@@ -329,7 +331,7 @@ class PatientController extends Controller
         }
     }
 
-    public function sendResultsToGovtTest($patientId, $labId)
+    public function generateSampleTestReport($patientId)
     {
         $patient = Patients::findOrFail($patientId);
         if (!$patient->id) {
@@ -389,7 +391,7 @@ class PatientController extends Controller
 
     public function getPatientReport($patient_id)
     {
-        $sql = "SELECT p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, r.result, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tablePatients} p 
+        $sql = "SELECT p.id, p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, p.identifier, p.identifier_type, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.name as lab_name, l.email as lab_email, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, (select name from {$this->tableResultTypes} where id=r.id) as result, (select snomed from {$this->tableResultTypes} where id=r.id) as result_snomed, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tablePatients} p 
             inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
             inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
             inner join {$this->tableLabs} l on l.id = p.lab_assigned  
@@ -401,7 +403,7 @@ class PatientController extends Controller
 
     public function getCompletedPatients(Request $request)
     {
-        $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value FROM {$this->tablePatients} p inner join {$this->tablePricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
+        $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value, lp.retail_price, (SELECT currency_symbol from {$this->tableCountries} where currency_code = lp.currency limit 0,1) as currency, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tablePricing} lp1 on lp1.test_type = tt.id where lp1.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p inner join {$this->tablePricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
         /* filters, pagination and sorter */
         $page = 1;
         $sort = env("RESULTS_SORT", "id");
