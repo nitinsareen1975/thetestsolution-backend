@@ -498,4 +498,5 @@ class PatientController extends Controller
         $pdf = PDF::loadView('patient-report', $viewData)->setPaper('a4', 'portrait');
         $pdf->save($filePath);
     }
+
 }

@@ -31,6 +31,7 @@ $router->group(['prefix' => 'global'], function () use ($router) {
     $router->get('print-template', 'GlobalController@printEmailTemplate');
     $router->get('currency-codes', 'GlobalController@getCurrencyCodes');
     $router->get('pricing', 'GlobalController@getPricing');
+    $router->get('is-walkin-patient/{patientId}', 'GlobalController@isWalkinPatient');
 });
 $router->group(['prefix' => 'crons'], function () use ($router) {
     $router->get('send-results-to-govt', 'CronsController@sendResultsToGovt');

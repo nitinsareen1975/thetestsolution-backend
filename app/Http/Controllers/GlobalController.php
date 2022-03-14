@@ -628,4 +628,11 @@ class GlobalController extends Controller
             'pagination' => $paginationArr
         ], 200);
     }
+    
+    public function isWalkinPatient($patientId)
+    {
+        $sql = "SELECT pr.is_walkin_price from {$this->tablePatients} p INNER JOIN {$this->tablePricing} pr on pr.id = p.pricing_id WHERE p.id = {$patientId}";
+        $data = DB::select($sql);
+        return response()->json(['status' => true, 'message' => 'Success', 'data' => ['is_walkin_patient' => ($data[0]->is_walkin_price == 1) ? true : false]], 200);
+    }
 }
