@@ -207,16 +207,21 @@
                                 <div class="list">
                                 <strong>Method:</strong> {{ $report_test_type_name }}
                                 </div>
+                                @if($report_test_procedure !='') 
+                                    <div class="list">
+                                    <strong>Procedure:</strong> {{ $report_test_procedure }}
+                                    </div>
+                                @endif
                                 <div class="list">
-                                <strong>Procedure:</strong> {{ $report_test_type_method }}
+                                <strong>Specimen Type:</strong> {{ $report_test_type_method }}
                                 </div>
                             </td>
                             <td>
                                 <div class="list">
-                                <strong>Result:</strong> {{ $report_result }}
-                                </div>
-                                <div class="list">
-                                <strong>SNOMED:</strong> {{ $report_result_snomed }}
+                                <strong>Result:</strong> {{ $report_result }} 
+                                @if($report_fi_test_type !='') 
+                                    for {{ $report_fi_test_type }}
+                                @endif
                                 </div>
                                 
                             </td>

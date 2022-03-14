@@ -25,6 +25,8 @@ class CronsController extends Controller
     protected string $tablePatientStatusList = "patient_status_list";
     protected string $tableResults = "results";
     protected string $tableTestTypeMethods = "test_type_methods";
+    protected string $tableTestTypeNames = "test_type_names";
+    protected string $tableResultTypes = "result_types";
 
     public function __construct()
     {
@@ -33,28 +35,32 @@ class CronsController extends Controller
 
     public function sendResultsToGovt()
     {
-        exit();
-        $query = "SELECT p.id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.result, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, tt.test_type, tt.specimen_site_snomed as snomed, tt.name as test_name, tt.loinc, tt.fi_model, ttm.code as specimen_snomed, tt.specimen_site as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
+        $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+        $startDate = date('Y-m-d 00:00:00');
+        $endDate = date('Y-m-d 23:59:59');
+        $query = "SELECT p.id, l.licence_number, l.facility_id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, tt.name as test_name, tt.loinc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity, r.id as result_id FROM {$this->tablePatients} p 
         inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
+        inner join {$this->tableLabs} l on l.id = p.lab_assigned  
         inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
-        inner join {$this->tableTestTypeMethods} ttm on ttm.test_type_id = tt.id 
         inner join {$this->tableResults} r on r.patient_id = p.id 
-        WHERE r.lab_id = p.lab_assigned and r.test_type_method_id = ttm.id and r.sent_to_govt = 0 ";
+        WHERE r.lab_id = p.lab_assigned and r.sent_to_govt = 0 AND r.created_at between '{$startDate}' and '{$endDate}'";
         $rows = DB::select($query);
         if (count($rows) > 0) {
             try {
                 $facilityName = "";
                 $labId = "";
+                $rowIdsToUpdate = [];
                 $f = fopen('php://memory', 'r+');
                 $fileHeaders = ['RecordID|FacilityID|CLIAID|AccessionNumber|ClientID|LastName|FirstName|MiddleName|DOB|SSN|StreetAddress|City|State|Zip|County|Gender|PhoneNumber|Ethnicity|RaceWhite|RaceBlack|RaceAmericanIndianAlaskanNative|RaceAsian|RaceNativeHawaiianOrOtherPacificIslander|RaceOther|RaceUnknown|RaceNoResponse|ProviderName|NPI|Pregnant|SchoolAssociation|SchoolName|SpecimenCollectionSite|SpecimenSNOMED|SpecimenCollectedDate|SpecimenReportedDate|RapidTest|Type|ModelOrComponent|LOINC|TestName|SNOMED|Result'];
                 fputcsv($f, $fileHeaders);
                 foreach ($rows as $item) {
                     $facilityName = str_replace(" ", "", $item->lab_assigned);
                     $labId = $item->lab_id;
+                    $rowIdsToUpdate[] = $item->result_id;
                     $rowData = [
                         $item->id,
-                        $item->lab_id,
-                        $item->confirmation_code,
+                        $item->facility_id,
+                        $item->licence_number,
                         '',
                         $item->id,
                         $item->lastname,
@@ -85,10 +91,10 @@ class CronsController extends Controller
                         '',
                         $item->specimen_collection_site,
                         $item->specimen_snomed,
-                        $item->specimen_collection_date,
-                        '',
-                        '',
-                        $item->test_type,
+                        date("m/d/Y", strtotime($item->specimen_collection_date)),
+                        date("m/d/Y", strtotime($item->specimen_collection_date)),
+                        max(0, $item->is_rapid_test),
+                        $item->fi_test_name,
                         $item->fi_model,
                         $item->loinc,
                         $item->test_name,
@@ -103,7 +109,11 @@ class CronsController extends Controller
                 $csvData = stream_get_contents($f);
                 $filename = $facilityName . '_' . date("mdY") . '_' . time() . '.csv';
 
-                /* $labdata = Labs::findOrFail($labId);
+                $file_handle = fopen($destinationPath.$filename, 'w');
+                fwrite($file_handle, $csvData);
+                fclose($file_handle);
+
+                $labdata = Labs::findOrFail($labId);
                 if (!empty($labdata->ftp_host) && !empty($labdata->ftp_host) && !empty($labdata->ftp_host) && !empty($labdata->ftp_password) && !empty($labdata->ftp_folder_path)) {
                     $strServer = $labdata->ftp_host;
                     $strServerPort = $labdata->ftp_port;
@@ -114,14 +124,19 @@ class CronsController extends Controller
                     if (ssh2_auth_password($resConnection, $strServerUsername, $strServerPassword)) {
                         $resSFTP = ssh2_sftp($resConnection);
                         $resFile = fopen("ssh2.sftp://{$resSFTP}/" . $labdata->ftp_folder_path . '/' . $filename, 'w');
+                        
                         $srcFile = fopen($destinationPath . $filename, 'r');
                         $writtenBytes = stream_copy_to_stream($srcFile, $resFile);
                         fclose($resFile);
                         fclose($srcFile);
-                        DB::table($this->tableResults)->where('id', $row->id)->update(["sent_to_govt" => 1]);
+                        
+                        foreach($rowIdsToUpdate as $rowIdToUpdate){
+                            DB::table($this->tableResults)->where('id', $rowIdToUpdate)->update(["sent_to_govt" => 1]);
+                        }
                     }
-                } */
+                }
             } catch (Exception $e) {
+                
             }
         }
     }
