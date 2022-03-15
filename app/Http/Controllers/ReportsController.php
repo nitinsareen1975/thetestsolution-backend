@@ -116,7 +116,7 @@ class ReportsController extends Controller
     {
         //$query = "SELECT p.id, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state FROM {$this->tablePatients} p inner join {$this->tablePricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
 
-        $query = "SELECT p.id, l.licence_number, l.facility_id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, tt.name as test_name, tt.loinc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
+        $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.created_at as completed_date, p.confirmation_code, p.street, p.city, p.state, p.county, p.zip, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, tt.name as test_name, tt.loinc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
         inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
         inner join {$this->tableLabs} l on l.id = p.lab_assigned  
         inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
@@ -194,8 +194,8 @@ class ReportsController extends Controller
                     ($item->race == "Other") ? 1 : 0,
                     ($item->race == "Unknown") ? 1 : 0,
                     0,
-                    '',
-                    '',
+                    $item->concerned_person_name,
+                    $item->npi,
                     '',
                     '',
                     '',

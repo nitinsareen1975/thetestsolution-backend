@@ -34,6 +34,7 @@ class LabsController extends Controller
             $lab->email = $request->input('email');
             $lab->phone = $request->input('phone');
             $lab->concerned_person_name = $request->input('concerned_person_name');
+            $lab->npi = $request->input('npi');
             $lab->licence_number = $request->input('licence_number');
             $lab->logo = $request->input('logo');
             $lab->price_per_test = $request->input('price_per_test');

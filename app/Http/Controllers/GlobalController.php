@@ -441,7 +441,7 @@ class GlobalController extends Controller
         }
     }
 
-    public function getPatientReport(Request $request)
+    public function getPatientReport(Request $request) //not in use
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -484,9 +484,15 @@ class GlobalController extends Controller
             $patient_id = base64_decode($request->input("patientId"));
             $patient = Patients::findOrFail($patient_id);
             $filename = "patient_" . $patient->confirmation_code . '.pdf';
-            $destinationPath = DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
-            if (file_exists(base_path() . $destinationPath . $filename)) {
-                return response()->json(['status' => true, 'data' => ["url" => Url($destinationPath . $filename)], 'message' => 'Success.'], 200);
+            $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+
+            if (!file_exists($destinationPath . $filename)) {
+                $patientController = new PatientController();
+                $patientController->generatePatientReport($patient, $destinationPath . $filename);
+            }
+
+            if (file_exists($destinationPath . $filename)) {
+                return response()->json(['status' => true, 'data' => ["url" => Url(str_replace(base_path(), "", $destinationPath . $filename))], 'message' => 'Success.'], 200);
             } else {
                 return response()->json(['status' => false, 'message' => 'Patient report is not generated yet.'], 200);
             }

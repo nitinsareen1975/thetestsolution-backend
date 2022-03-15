@@ -20,3 +20,10 @@ ALTER TABLE `test_type_methods` DROP `test_type_id`;
 ALTER TABLE `test_type_methods` ADD `status` INT(2) NOT NULL DEFAULT '1' AFTER `updated_at`;
 ALTER TABLE `pricing` ADD `is_walkin_price` INT(2) NOT NULL DEFAULT '0' AFTER `test_duration`;
 ALTER TABLE `patients` ADD `specimen_collection_method` VARCHAR(100) NULL AFTER `confirmation_code`;
+
+ALTER TABLE `patients` ADD `is_lab_collected` INT(2) NOT NULL DEFAULT '0' AFTER `pricing_id`;
+ALTER TABLE `labs` ADD `npi` VARCHAR(100) NULL AFTER `concerned_person_name`;
+DELETE FROM `roles` WHERE `roles`.`id` = 6;
+INSERT INTO `roles` (`id`, `name`, `privileges`, `type`, `status`) VALUES (NULL, 'Lab Admin', NULL, NULL, '1');
+
+//create folder /public/upload/csv-reports
