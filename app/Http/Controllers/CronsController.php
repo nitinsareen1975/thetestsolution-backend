@@ -45,6 +45,7 @@ class CronsController extends Controller
         inner join {$this->tableResults} r on r.patient_id = p.id 
         WHERE r.lab_id = p.lab_assigned and r.sent_to_govt = 0 AND r.created_at between '{$startDate}' and '{$endDate}'";
         $rows = DB::select($query);
+        
         if (count($rows) > 0) {
             try {
                 $facilityName = "";
@@ -107,6 +108,7 @@ class CronsController extends Controller
                 rewind($f);
 
                 $csvData = stream_get_contents($f);
+                
                 $filename = $facilityName . '_' . date("mdY") . '_' . time() . '.csv';
 
                 $file_handle = fopen($destinationPath.$filename, 'w');
@@ -136,7 +138,6 @@ class CronsController extends Controller
                     }
                 }
             } catch (Exception $e) {
-                
             }
         }
     }

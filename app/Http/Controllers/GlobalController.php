@@ -514,9 +514,26 @@ class GlobalController extends Controller
 
             $sqlTotalTestsByTop5Labs = "select l.name as lab_name, (select count(*) from {$this->tablePatients} p where p.lab_assigned = l.id) as total_tests from {$this->tableLabs} l order by total_tests desc limit 0,5";
 
-            $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 7 DAY";
+            $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 14 DAY";
 
-            $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p order by id desc limit 0, 5";
+            $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.progress_status = 1 and CAST(p.scheduled_date as DATE) >= CURDATE() order by p.scheduled_date asc limit 0, 5";
+            
+            $sqlSalesByTestTypes = "SELECT pr.name as test_type, 
+            ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and CAST(p1.created_at as DATE) BETWEEN (curdate() - INTERVAL((WEEKDAY(curdate()))) DAY) AND (curdate() - INTERVAL((WEEKDAY(curdate()))-7) DAY)), 0) as sales_this_week,
+            ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and CAST(p1.created_at as DATE) BETWEEN (last_day(curdate() - interval 1 month) + interval 1 day) AND (last_day(curdate()))), 0) as sales_this_month,
+            ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and CAST(p1.created_at as DATE) BETWEEN DATE_FORMAT(NOW() ,'%Y') AND NOW()), 0) as sales_this_year 
+            from {$this->tablePricing} pr order by test_type";
+
+            $sqlTotalSalesData = "select 'All Time' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
+            inner join {$this->tablePricing} pr on pr.id = p.pricing_id
+            union 
+            select 'Last Month' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
+            inner join {$this->tablePricing} pr on pr.id = p.pricing_id
+            where p.created_at BETWEEN (last_day(curdate() - interval 2 month) + interval 1 day) AND (last_day(curdate() - interval 1 month))
+            union
+            select 'Current Month' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
+            inner join {$this->tablePricing} pr on pr.id = p.pricing_id
+            where p.created_at BETWEEN (last_day(curdate() - interval 1 month) + interval 1 day) AND (last_day(curdate()))";
 
             //for lab admins
             if ($lab_id > 0) {
@@ -527,17 +544,36 @@ class GlobalController extends Controller
                 (select count(p2.id) from {$this->tablePatients} p2 where p2.progress_status = 3 and p2.lab_assigned='{$lab_id}') as total_pending_results, 
                 (select count(p3.id) from {$this->tablePatients} p3 where p3.progress_status = 4 and p3.lab_assigned='{$lab_id}') as total_completed_results";
 
-                $sqlTotalTestsByTop5Labs = "select l.name as lab_name, (select count(*) from {$this->tablePatients} p where p.lab_assigned = l.id) as total_tests from {$this->tableLabs} where l.id='{$lab_id}' l order by total_tests desc limit 0,5";
+                $sqlTotalTestsByTop5Labs = "select l.name as lab_name, (select count(*) from {$this->tablePatients} p where p.lab_assigned = l.id) as total_tests from {$this->tableLabs} l where l.id='{$lab_id}' order by total_tests desc limit 0,5";
 
-                $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 7 DAY and p.lab_assigned='{$lab_id}'";
+                $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 14 DAY and p.lab_assigned='{$lab_id}'";
 
-                $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.lab_assigned='{$lab_id}' order by id desc limit 0, 5";
+                $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.lab_assigned='{$lab_id}' and p.progress_status = 1 and CAST(p.scheduled_date as DATE) >= CURDATE() order by p.scheduled_date asc limit 0, 5";
+                
+                $sqlSalesByTestTypes = "SELECT pr.name as test_type, 
+                ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and p1.lab_assigned='{$lab_id}' and CAST(p1.created_at as DATE) BETWEEN (curdate() - INTERVAL((WEEKDAY(curdate()))) DAY) AND (curdate() - INTERVAL((WEEKDAY(curdate()))-7) DAY)), 0) as sales_this_week,
+                ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and p1.lab_assigned='{$lab_id}' and CAST(p1.created_at as DATE) BETWEEN (last_day(curdate() - interval 1 month) + interval 1 day) AND (last_day(curdate()))), 0) as sales_this_month,
+                ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and p1.lab_assigned='{$lab_id}' and CAST(p1.created_at as DATE) BETWEEN DATE_FORMAT(NOW() ,'%Y') AND NOW()), 0) as sales_this_year 
+                from {$this->tablePricing} pr order by test_type";
+                
+                $sqlTotalSalesData = "select 'All Time' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
+                inner join {$this->tablePricing} pr on pr.id = p.pricing_id where p.lab_assigned='{$lab_id}'
+                union 
+                select 'Last Month' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
+                inner join {$this->tablePricing} pr on pr.id = p.pricing_id
+                where p.created_at BETWEEN (last_day(curdate() - interval 2 month) + interval 1 day) AND (last_day(curdate() - interval 1 month)) and p.lab_assigned='{$lab_id}'
+                union
+                select 'Current Month' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
+                inner join {$this->tablePricing} pr on pr.id = p.pricing_id
+                where p.created_at BETWEEN (last_day(curdate() - interval 1 month) + interval 1 day) AND (last_day(curdate())) and p.lab_assigned='{$lab_id}'";
             }
 
             $sqlTotalResults = DB::select($sqlTotalResults);
             $sqlTotalTestsByTop5Labs = DB::select($sqlTotalTestsByTop5Labs);
             $sqlPatientsByLabsPastWeek = DB::select($sqlPatientsByLabsPastWeek);
             $sqlLatestAppointments = DB::select($sqlLatestAppointments);
+            $sqlSalesByTestTypes = DB::select($sqlSalesByTestTypes);
+            $sqlTotalSalesData = DB::select($sqlTotalSalesData);
 
             $data = [
                 'total_patients' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_patients : 'N/A',
@@ -547,7 +583,9 @@ class GlobalController extends Controller
                 'total_completed_results' => isset($sqlTotalResults[0]) ? $sqlTotalResults[0]->total_completed_results : 'N/A',
                 'total_tests_by_top5_labs' => isset($sqlTotalTestsByTop5Labs[0]) ? $sqlTotalTestsByTop5Labs : [],
                 'total_appointments_past_week' => isset($sqlPatientsByLabsPastWeek[0]) ? $sqlPatientsByLabsPastWeek : [],
-                'latest_appointments' => isset($sqlLatestAppointments[0]) ? $sqlLatestAppointments : []
+                'latest_appointments' => isset($sqlLatestAppointments[0]) ? $sqlLatestAppointments : [],
+                'sales_by_test_types' => isset($sqlSalesByTestTypes[0]) ? $sqlSalesByTestTypes : [],
+                'total_sales_data' => isset($sqlTotalSalesData[0]) ? $sqlTotalSalesData : []
             ];
             return response()->json(['status' => true, 'data' => $data, 'message' => 'Success.'], 200);
         } catch (\Exception $e) {
