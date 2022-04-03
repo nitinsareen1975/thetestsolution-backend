@@ -245,8 +245,9 @@
                                 <strong>SEX:</strong> {{ $report_gender }}
                             </div>
                         </div>
-                        <div><strong>COLLECTED:</strong> {{ date('m/d/Y', strtotime($report_specimen_collection_date)) }}</div>
+                        <!-- <div><strong>COLLECTED:</strong> {{ date('m/d/Y', strtotime($report_specimen_collection_date)) }}</div> -->
                         <div><strong>REPORTED:</strong> {{ date('m/d/Y', strtotime($report_result_date)) }}</div>
+                        <div><strong>GROUP EVENT:</strong> {{ $report_event_name }}</div>
                     </div>
                 </td>
             </tr>
@@ -271,16 +272,16 @@
                                 <strong>Procedure:</strong> {{ $report_test_procedure }}
                             </div>
                             @endif
-                            <div class="list">
+                            <!-- <div class="list">
                                 <strong>Specimen Type:</strong> {{ $report_test_type_method }}
-                            </div>
+                            </div> -->
                         </td>
                         <td>
                             <div class="list">
-                                <strong>{{ $report_result }}</strong>
+                                <!-- <strong>{{ $report_result }}</strong>
                                 @if($report_fi_test_type !='')
                                 for {{ $report_fi_test_type }}
-                                @endif
+                                @endif -->
                             </div>
 
                         </td>

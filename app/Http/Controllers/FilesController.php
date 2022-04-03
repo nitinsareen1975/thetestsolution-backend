@@ -10,6 +10,7 @@ class FilesController extends Controller
 {
     protected string $tableLabs = 'labs';
     protected string $tablePatients = 'patients';
+    protected string $tableGroupPatients = 'group_patients';
 
     public function __construct()
     {
@@ -51,6 +52,9 @@ class FilesController extends Controller
                     break;
                 case "patient-identifier-doc":
                     return $this->removePatientIdentifierDoc($id);
+                    break;
+                case "group-patient-identifier-doc":
+                    return $this->removeGroupPatientIdentifierDoc($id);
                     break;
                 default:
                     break;
@@ -106,6 +110,23 @@ class FilesController extends Controller
             $data = [];
             $data['identifier_doc'] = "";
             DB::table($this->tablePatients)->where('id', $id)->update($data);
+            return response()->json(['status' => true, 'message' => 'File removed.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Request Failed.', 'exception' => $e->getMessage()], 409);
+        }
+    }
+    
+    public function removeGroupPatientIdentifierDoc($id)
+    {
+        try {
+            $oldFile = DB::table($this->tableGroupPatients)->where('id','=',$id)->first();
+            $oldFile = base_path().$oldFile->identifier_doc;                
+            if(file_exists($oldFile)){
+                unlink($oldFile);
+            }
+            $data = [];
+            $data['identifier_doc'] = "";
+            DB::table($this->tableGroupPatients)->where('id', $id)->update($data);
             return response()->json(['status' => true, 'message' => 'File removed.'], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => 'Request Failed.', 'exception' => $e->getMessage()], 409);

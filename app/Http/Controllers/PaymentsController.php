@@ -38,6 +38,24 @@ class PaymentsController extends Controller
         }
     }
 
+    public function createEventPaymentIntent(Request $request)
+    {
+        try {
+            $amount = $request->input('amount');
+            $paymentData = [
+                "amount" => $amount * 100,
+                "currency" => 'usd',
+                "payment_method_types" => ['card'],
+                "description" => "Payment for scheduled screening (".$request->input('customer_email').")"
+            ];
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $paymentObj = $stripe->paymentIntents->create($paymentData);
+            return response()->json(['status' => true, 'data' => $paymentObj->client_secret], 200);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Request Failed.', 'exception' => $e->getMessage()], 409);
+        }
+    }
+
     public function makeStripePayment($request)
     {
         Stripe::setApiKey(env('STRIPE_SECRET'));

@@ -36,6 +36,7 @@ class LabsController extends Controller
             $lab->concerned_person_name = $request->input('concerned_person_name');
             $lab->npi = $request->input('npi');
             $lab->licence_number = $request->input('licence_number');
+            $lab->facility_id = $request->input('facility_id');
             $lab->logo = $request->input('logo');
             $lab->price_per_test = $request->input('price_per_test');
             $lab->tests_available = $request->input('tests_available');

@@ -89,8 +89,8 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->get('reports', 'ReportsController@getAll');
     $router->get('reports/download/{patientId}', 'ReportsController@download');
     $router->get('reports/export/{format}', 'ReportsController@export');
+    $router->get('group-reports/export/{format}', 'ReportsController@exportGroup');
     /* reports */
-
     
     /* pricing */
     $router->get('pricing', 'PricingController@getAll');
@@ -98,4 +98,23 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('pricing', 'PricingController@add');
     $router->put('pricing/{id}', 'PricingController@update');
     /* pricing */
+    
+    /* group-concierge */
+    $router->get('group-events', 'GroupConciergeController@getGroupEvents');
+    $router->get('group-events/{id}', 'GroupConciergeController@getGroupEvent');
+    $router->post('group-events', 'GroupConciergeController@addGroupEvent');
+    $router->put('group-events/{id}', 'GroupConciergeController@updateGroupEvent');
+
+    $router->get('group-patients', 'GroupConciergeController@getGroupPatients');
+    $router->get('group-patients/{id}', 'GroupConciergeController@getGroupPatient');
+    $router->post('group-patients', 'GroupConciergeController@addGroupPatient');
+    $router->put('group-patients/{id}', 'GroupConciergeController@updateGroupPatient');
+
+    $router->get('group-concierge-results', 'GroupConciergeController@groupConciergeResults');
+    $router->post('upload-group-event-agreement', 'GroupConciergeController@uploadGroupEventAgreement');
+    $router->post('remove-group-event-agreement', 'GroupConciergeController@removeGroupEventAgreement');
+
+    $router->get('complete-registration/{id}/{group_id}', 'GroupConciergeController@completeRegistration');
+    $router->post('save-and-complete-registration/{id}/{group_id}', 'GroupConciergeController@saveAndCompleteRegistration');
+    /* group-concierge */
 });

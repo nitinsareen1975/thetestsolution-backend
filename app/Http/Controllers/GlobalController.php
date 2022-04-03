@@ -11,6 +11,8 @@ use App\Models\Patients;
 use App\Models\Labs;
 use Illuminate\Support\Facades\Mail;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Barryvdh\DomPDF\Facade\Pdf;
+use PharIo\Manifest\Url;
 
 class GlobalController extends Controller
 {
@@ -23,6 +25,10 @@ class GlobalController extends Controller
     protected $tableResults = "results";
     protected $tableCountries = "countries";
     protected $tablePricing = "pricing";
+    protected string $tableGroupEvents = 'group_events';
+    protected string $tableGroupPatients = 'group_patients';
+    protected string $tableGroupResults = 'group_results';
+    protected string $tableGroupPayments = 'group_payments';
 
     public function __construct()
     {
@@ -471,6 +477,37 @@ class GlobalController extends Controller
         }
     }
 
+    public function getGroupPatientReportPDF(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'patientId' => 'required'
+            ]);
+            if ($validator->fails()) {
+                $messages = $validator->errors();
+                return response()->json(['status' => false, 'message' => implode(", ", $messages->all())], 409);
+            }
+            $patient_id = base64_decode($request->input("patientId"));
+            $patient = DB::select("select * from {$this->tableGroupPatients} where id = '$patient_id'");
+            $patient = $patient[0];
+            $filename = "patient_" . $patient->confirmation_code . '.pdf';
+            $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR;
+
+            if (!file_exists($destinationPath . $filename)) {
+                $patientController = new PatientController();
+                $patientController->generateGroupPatientReport($patient, $destinationPath . $filename);
+            }
+
+            if (file_exists($destinationPath . $filename)) {
+                return response()->json(['status' => true, 'data' => ["url" => Url(str_replace(base_path(), "", $destinationPath . $filename))], 'message' => 'Success.'], 200);
+            } else {
+                return response()->json(['status' => false, 'message' => 'Patient report is not generated yet.'], 200);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'No records found.', 'exception' => $e->getMessage()], 409);
+        }
+    }
+
     public function getPatientReportPDF(Request $request)
     {
         try {
@@ -517,12 +554,12 @@ class GlobalController extends Controller
             $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 14 DAY";
 
             $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.progress_status = 1 and CAST(p.scheduled_date as DATE) >= CURDATE() order by p.scheduled_date asc limit 0, 5";
-            
+
             $sqlSalesByTestTypes = "SELECT pr.name as test_type, 
             ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and CAST(p1.created_at as DATE) BETWEEN (curdate() - INTERVAL((WEEKDAY(curdate()))) DAY) AND (curdate() - INTERVAL((WEEKDAY(curdate()))-7) DAY)), 0) as sales_this_week,
             ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and CAST(p1.created_at as DATE) BETWEEN (last_day(curdate() - interval 1 month) + interval 1 day) AND (last_day(curdate()))), 0) as sales_this_month,
             ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and CAST(p1.created_at as DATE) BETWEEN DATE_FORMAT(NOW() ,'%Y') AND NOW()), 0) as sales_this_year 
-            from {$this->tablePricing} pr order by test_type";
+            from {$this->tablePricing} pr where pr.is_walkin_price=0 order by test_type";
 
             $sqlTotalSalesData = "select 'All Time' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
             inner join {$this->tablePricing} pr on pr.id = p.pricing_id
@@ -549,13 +586,13 @@ class GlobalController extends Controller
                 $sqlPatientsByLabsPastWeek = "select p.created_at, p.id from {$this->tablePatients} p where p.created_at > DATE(NOW()) - INTERVAL 14 DAY and p.lab_assigned='{$lab_id}'";
 
                 $sqlLatestAppointments = "select p.id, p.firstname, p.lastname, p.scheduled_date, p.scheduled_time, p.email, p.phone from {$this->tablePatients} p where p.lab_assigned='{$lab_id}' and p.progress_status = 1 and CAST(p.scheduled_date as DATE) >= CURDATE() order by p.scheduled_date asc limit 0, 5";
-                
+
                 $sqlSalesByTestTypes = "SELECT pr.name as test_type, 
                 ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and p1.lab_assigned='{$lab_id}' and CAST(p1.created_at as DATE) BETWEEN (curdate() - INTERVAL((WEEKDAY(curdate()))) DAY) AND (curdate() - INTERVAL((WEEKDAY(curdate()))-7) DAY)), 0) as sales_this_week,
                 ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and p1.lab_assigned='{$lab_id}' and CAST(p1.created_at as DATE) BETWEEN (last_day(curdate() - interval 1 month) + interval 1 day) AND (last_day(curdate()))), 0) as sales_this_month,
                 ifnull((SELECT sum(pr1.retail_price) from {$this->tablePricing} pr1 inner join {$this->tablePatients} p1 on p1.pricing_id = pr1.id where pr1.id = pr.id and p1.lab_assigned='{$lab_id}' and CAST(p1.created_at as DATE) BETWEEN DATE_FORMAT(NOW() ,'%Y') AND NOW()), 0) as sales_this_year 
-                from {$this->tablePricing} pr order by test_type";
-                
+                from {$this->tablePricing} pr where pr.is_walkin_price=0 order by test_type";
+
                 $sqlTotalSalesData = "select 'All Time' as 'duration', count(p.id) as 'total_orders', ifnull(sum(pr.retail_price),0) as 'total_sales' from {$this->tablePatients} p 
                 inner join {$this->tablePricing} pr on pr.id = p.pricing_id where p.lab_assigned='{$lab_id}'
                 union 
@@ -672,11 +709,101 @@ class GlobalController extends Controller
             'pagination' => $paginationArr
         ], 200);
     }
-    
+
     public function isWalkinPatient($patientId)
     {
         $sql = "SELECT pr.is_walkin_price from {$this->tablePatients} p INNER JOIN {$this->tablePricing} pr on pr.id = p.pricing_id WHERE p.id = {$patientId}";
         $data = DB::select($sql);
         return response()->json(['status' => true, 'message' => 'Success', 'data' => ['is_walkin_patient' => ($data[0]->is_walkin_price == 1) ? true : false]], 200);
     }
+
+    public function preRegistrationQRCodePDF(Request $request)
+    {
+        $eventId = $request->input("eventId");
+        $event = DB::select("select * from {$this->tableGroupEvents} where id = '{$eventId}'");
+        $event = $event[0];
+        $filename = "event_" . $event->id . '.pdf';
+        $destinationPath = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'event-pre-registration-pdfs' . DIRECTORY_SEPARATOR;
+        if (!file_exists($destinationPath . $filename)) {
+            $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . 'event_pre_reg_'.$event->id . '.png';
+            $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . 'event_pre_reg_'.$event->id . '.png';
+            QrCode::format('png')->size(280)->generate(env("APP_FRONTEND_URL") . '/event-pre-register/' . base64_encode($event->id), $qrCodeFile);
+            $viewData = [
+                'qr_code' => $qrCodeUrl, 
+                'logo_url' => Url("/public/images/logo.jpg"),
+                'support_number' => env('CUSTOMER_SERVICE_NUMBER', '786-301-7481')
+            ];
+            $pdf = PDF::loadView('event-pre-registration-qrcode', $viewData)->setPaper('a4', 'portrait');
+            $pdf->save($destinationPath . $filename);
+        }
+        return response()->json(['status' => true, 'data' => ["url" => Url(str_replace(base_path(), "", $destinationPath . $filename))], 'message' => 'Success'], 200);
+    }
+
+    public function addGroupPatient(Request $request)
+    {
+        try {
+            $data = [];
+            $data['group_id'] = $request->input('group_id');
+            $data['initial'] = $request->input('initial');
+            $data['firstname'] = $request->input('firstname');
+            $data['middlename'] = $request->input('middlename');
+            $data['lastname'] = $request->input('lastname');
+            $data['email'] = $request->input('email');
+            $data['phone'] = $request->input('phone');
+            $data['gender'] = $request->input('gender');
+            $data['dob'] = $request->input('dob');
+            $data['street'] = $request->input('street');
+            $data['city'] = $request->input('city');
+            $data['state'] = $request->input('state');
+            $data['county'] = $request->input('county');
+            $data['country'] = $request->input('country');
+            $data['zip'] = $request->input('zip');
+            $data['identifier'] = $request->input('identifier');
+            $data['identifier_state'] = $request->input('identifier_state');
+            $data['identifier_country'] = $request->input('identifier_country');
+            $data['identifier_type'] = $request->input('identifier_type');
+            $data['identifier_doc'] = $request->input('identifier_doc');
+            $data['ethnicity'] = $request->input('ethnicity');
+            $data['pregnent'] = $request->input('pregnent');
+            $data['race'] = $request->input('race');
+            $data['scheduled_date'] = $request->input('scheduled_date');
+            $data['scheduled_time'] = $request->input('scheduled_time');
+            $data['lab_assigned'] = $request->input('lab_assigned');
+            $data['have_fever'] = $request->input('have_fever');
+            $data['have_breath_shortness'] = $request->input('have_breath_shortness');
+            $data['have_sore_throat'] = $request->input('have_sore_throat');
+            $data['have_muscle_pain'] = $request->input('have_muscle_pain');
+            $data['have_cough'] = $request->input('have_cough');
+            $data['have_decreased_taste'] = $request->input('have_decreased_taste');
+            $data['have_any_symptom'] = $request->input('have_any_symptom');
+            $data['have_vaccinated'] = $request->input('have_vaccinated');
+            $data['pricing_id'] = $request->input('pricing_id');
+            $data['is_lab_collected'] = $request->input('is_lab_collected');
+            $data['transaction_id'] = $request->input('transaction_id');
+            $data['payment_provider'] = $request->input('payment_provider');
+            $data['confirmation_code'] = $request->input('confirmation_code');
+            $data['specimen_collection_method'] = $request->input('specimen_collection_method');
+            $data['specimen_type'] = $request->input('specimen_type');
+            $data['specimen_collection_date'] = $request->input('specimen_collection_date');
+            $data['progress_status'] = $request->input('progress_status');
+            $data['created_at'] = date("Y-m-d H:i:s");
+            $data['updated_at'] = date("Y-m-d H:i:s");
+            $data['status'] = empty($request->input('status')) ? 1 : (bool)$request->input('status');
+            DB::table($this->tableGroupPatients)->insert($data);
+            return response()->json(['status' => true, 'data' => $data, 'message' => 'Registration successful.'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Registration failed. Please try again.', 'exception' => $e->getMessage()], 409);
+        }
+    }
+
+    public function getGroupEvent($id)
+    {
+        $data = DB::select("SELECT * FROM {$this->tableGroupEvents} WHERE id={$id}");
+        if(count($data) > 0){
+            return response()->json(['status' => true, 'message' => 'Success', 'data' =>  $data[0]], 200);
+        } else {
+            return response()->json(['status' => false, 'message' => 'Record not found.'], 409);
+        }
+    }
+
 }

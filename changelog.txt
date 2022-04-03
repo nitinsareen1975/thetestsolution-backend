@@ -27,3 +27,113 @@ DELETE FROM `roles` WHERE `roles`.`id` = 6;
 INSERT INTO `roles` (`id`, `name`, `privileges`, `type`, `status`) VALUES (NULL, 'Lab Admin', NULL, NULL, '1');
 
 //create folder /public/upload/csv-reports
+
+//group-concierge
+CREATE TABLE `group_patients` (
+  `id` int(11) NOT NULL,
+  `group_id` int(11) NOT NULL,
+  `initial` varchar(50) DEFAULT NULL,
+  `firstname` varchar(50) NOT NULL,
+  `middlename` varchar(50) DEFAULT NULL,
+  `lastname` varchar(50) DEFAULT NULL,
+  `email` varchar(50) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `gender` varchar(10) DEFAULT NULL,
+  `dob` varchar(50) DEFAULT NULL,
+  `street` varchar(50) DEFAULT NULL,
+  `city` varchar(50) DEFAULT NULL,
+  `state` varchar(50) DEFAULT NULL,
+  `county` varchar(50) DEFAULT NULL,
+  `country` varchar(50) DEFAULT NULL,
+  `zip` varchar(50) DEFAULT NULL,
+  `identifier` varchar(50) DEFAULT NULL,
+  `identifier_state` varchar(50) DEFAULT NULL,
+  `identifier_country` varchar(50) DEFAULT NULL,
+  `identifier_type` varchar(50) DEFAULT NULL,
+  `identifier_doc` varchar(500) DEFAULT NULL,
+  `ethnicity` varchar(50) DEFAULT NULL,
+  `pregnent` varchar(5) DEFAULT NULL,
+  `race` varchar(50) DEFAULT NULL,
+  `scheduled_date` varchar(50) DEFAULT NULL,
+  `scheduled_time` varchar(50) DEFAULT NULL,
+  `lab_assigned` int(11) DEFAULT NULL,
+  `have_fever` int(1) DEFAULT NULL,
+  `have_breath_shortness` int(1) DEFAULT NULL,
+  `have_sore_throat` int(1) DEFAULT NULL,
+  `have_muscle_pain` int(1) DEFAULT NULL,
+  `have_cough` int(1) DEFAULT NULL,
+  `have_decreased_taste` int(1) DEFAULT NULL,
+  `have_any_symptom` int(1) DEFAULT NULL,
+  `have_vaccinated` int(1) DEFAULT NULL,
+  `pricing_id` int(1) DEFAULT NULL,
+  `is_lab_collected` int(2) NOT NULL DEFAULT 0,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `payment_provider` varchar(50) DEFAULT NULL,
+  `confirmation_code` varchar(100) DEFAULT NULL,
+  `specimen_collection_method` varchar(100) DEFAULT NULL,
+  `specimen_type` varchar(100) DEFAULT NULL,
+  `specimen_collection_date` varchar(100) DEFAULT NULL,
+  `created_at` varchar(50) DEFAULT NULL,
+  `updated_at` varchar(50) DEFAULT NULL,
+  `progress_status` int(2) DEFAULT 1,
+  `status` int(2) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE `group_patients` ADD PRIMARY KEY (`id`);
+ALTER TABLE `group_patients` MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+CREATE TABLE `group_results` (
+  `id` int(11) NOT NULL,
+  `group_id` int(11) DEFAULT NULL,
+  `patient_id` int(11) DEFAULT NULL,
+  `lab_id` int(11) DEFAULT NULL,
+  `result` varchar(100) DEFAULT NULL,
+  `result_value` varchar(200) DEFAULT NULL,
+  `test_type_method_id` int(11) NOT NULL,
+  `sent_to_govt` int(1) DEFAULT NULL,
+  `qr_code` varchar(500) DEFAULT NULL,
+  `created_at` varchar(100) DEFAULT NULL,
+  `status` int(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE `group_results` ADD PRIMARY KEY (`id`);
+ALTER TABLE `group_results` MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+CREATE TABLE `group_payments` (
+  `id` int(11) NOT NULL,
+  `group_id` int(11) NOT NULL,
+  `transaction_id` varchar(100) NOT NULL,
+  `amount` varchar(50) NOT NULL DEFAULT '0',
+  `currency` varchar(10) DEFAULT NULL,
+  `payment_status` varchar(50) NOT NULL,
+  `created_at` varchar(50) NOT NULL,
+  `updated_at` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE `group_payments` ADD PRIMARY KEY (`id`);
+ALTER TABLE `group_payments` MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+CREATE TABLE `group_events` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `address` varchar(500) NOT NULL,
+  `number_of_persons` varchar(50) DEFAULT NULL,
+  `test_type` varchar(50) DEFAULT NULL,
+  `rate_per_test` varchar(50) DEFAULT NULL,
+  `lab_location` int(11) DEFAULT NULL,
+  `event_date` varchar(50) DEFAULT NULL,
+  `event_time` varchar(50) DEFAULT NULL,
+  `contact_person_name` varchar(200) DEFAULT NULL,
+  `contact_person_email` varchar(200) DEFAULT NULL,
+  `contact_person_phone` varchar(200) DEFAULT NULL,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `cheque_number` varchar(500) DEFAULT NULL,
+  `payment_amount` varchar(50) DEFAULT NULL,
+  `transaction_id` varchar(200) DEFAULT NULL,
+  `event_agreement` varchar(500) DEFAULT NULL,
+  `created_at` varchar(50) DEFAULT NULL,
+  `updated_at` varchar(50) DEFAULT NULL,
+  `status` int(2) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE `group_events` ADD PRIMARY KEY (`id`);
+ALTER TABLE `group_events` MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+//create dir /public/uploads/event-agreements
+//create folder /public/upload/event-pre-registration-pdfs

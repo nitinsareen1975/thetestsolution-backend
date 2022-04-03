@@ -26,6 +26,10 @@ class PatientController extends Controller
     protected string $tableTestTypeMethods = "test_type_methods";
     protected string $tableResultTypes = "result_types";
     protected string $tableCountries = "countries";
+    protected string $tableGroupEvents = "group_events";
+    protected string $tableGroupPatients = "group_patients";
+    protected string $tableGroupPayments = "group_payments";
+    protected string $tableGroupResults = "group_results";
 
     public function __construct()
     {
@@ -402,6 +406,18 @@ class PatientController extends Controller
         return $data[0];
     }
 
+    public function getGroupPatientReport($patient_id)
+    {
+       $sql = "SELECT e.name as event_name, p.id, p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, p.identifier, p.identifier_type, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.concerned_person_name, l.npi, l.name as lab_name, l.email as lab_email, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, tt.test_procedure, tt.fi_test_type, (select name from {$this->tableResultTypes} where id=r.result) as result, (select snomed from {$this->tableResultTypes} where id=r.result) as result_snomed, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tableGroupPatients} p 
+            inner join {$this->tableGroupEvents} e on e.id = p.group_id 
+            inner join {$this->tableTestTypes} tt on tt.id = e.test_type 
+            inner join {$this->tableLabs} l on l.id = e.lab_location  
+            inner join {$this->tableGroupResults} r on r.patient_id = p.id and r.group_id = p.group_id 
+            WHERE p.id = {$patient_id}";
+        $data = DB::select($sql);
+        return $data[0];
+    }
+
     public function getCompletedPatients(Request $request)
     {
         $query = "SELECT p.*, (SELECT name FROM {$this->tableLabs} WHERE id IN (p.lab_assigned)) as lab_assigned, r.result, r.result_value, lp.retail_price, (SELECT currency_symbol from {$this->tableCountries} where currency_code = lp.currency limit 0,1) as currency, (SELECT tt.name from {$this->tableTestTypes} tt inner join {$this->tablePricing} lp1 on lp1.test_type = tt.id where lp1.id = p.pricing_id) as test_type_name FROM {$this->tablePatients} p inner join {$this->tablePricing} lp on lp.id = p.pricing_id inner join {$this->tableResults} r on r.patient_id = p.id WHERE r.lab_id = p.lab_assigned ";
@@ -497,6 +513,32 @@ class PatientController extends Controller
         QrCode::format('png')->size(180)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id) . '/' . $patient->confirmation_code, $qrCodeFile);
         $viewData["report_qrcode"] = $qrCodeUrl;
         $pdf = PDF::loadView('patient-report', $viewData)->setPaper('a4', 'portrait');
+        $pdf->save($filePath);
+    }
+
+    public function generateGroupPatientReport($patient, $filePath)
+    {
+        $pdf = new Pdf();
+        $data = $this->getGroupPatientReport($patient->id);
+        $viewData = [];
+        foreach ($data as $k => $v) {
+            if ($k == "logo" && empty($k)) {
+                $v = url("/public/images/logo.jpg");
+            }
+            if ($k == "logo") {
+                if ((stripos($v, '.jpg') === -1) && (stripos($v, '.jpeg') === -1)) {
+                    $v = url("/public/images/logo.jpg");
+                } else {
+                    $v = url("/") . str_replace("\\", "/", $v);
+                }
+            }
+            $viewData["report_{$k}"] = $v;
+        }
+        $qrCodeFile = base_path() . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes' . DIRECTORY_SEPARATOR . $patient->confirmation_code . '.png';
+        $qrCodeUrl = url('/') . '/public/uploads/qrcodes/' . $patient->confirmation_code . '.png';
+        QrCode::format('png')->size(180)->generate(env("APP_FRONTEND_URL") . '/patient-report/' . base64_encode($patient->id) . '/' . $patient->confirmation_code, $qrCodeFile);
+        $viewData["report_qrcode"] = $qrCodeUrl;
+        $pdf = PDF::loadView('group-patient-report', $viewData)->setPaper('a4', 'portrait');
         $pdf->save($filePath);
     }
 
