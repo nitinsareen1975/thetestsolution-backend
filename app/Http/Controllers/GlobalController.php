@@ -268,6 +268,16 @@ class GlobalController extends Controller
                 $patients->progress_status = empty($request->input('progress_status')) ? 1 : $request->input('progress_status');
                 $patients->payment_provider = empty($request->input('payment_provider')) ? 'Stripe' : $request->input('payment_provider');
                 $patients->status = empty($request->input('status')) ? 1 : (bool)$request->input('status');
+                $patients->street2 = $request->input('street2');
+                $patients->ssn = $request->input('ssn');
+                $patients->AbnormalFlag = $request->input('AbnormalFlag');
+                $patients->FirstTestForCondition = $request->input('FirstTestForCondition');
+                $patients->EmployedInHealthCare = $request->input('EmployedInHealthCare');
+                $patients->Symptomatic = $request->input('Symptomatic');
+                $patients->DateOfSymptomOnset = $request->input('DateOfSymptomOnset');
+                $patients->AccessionNumber = $request->input('AccessionNumber');
+                $patients->SpecimenSourceCode = $request->input('SpecimenSourceCode');
+                $patients->pregnent = $request->input('pregnent');
                 $patients->save();
 
                 //save payment

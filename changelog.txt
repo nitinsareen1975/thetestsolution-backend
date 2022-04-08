@@ -137,3 +137,25 @@ ALTER TABLE `group_events` MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 //create dir /public/uploads/event-agreements
 //create folder /public/upload/event-pre-registration-pdfs
+
+
+
+ALTER TABLE `patients` ADD `street2` VARCHAR(500) NULL AFTER `street`;
+ALTER TABLE `patients` ADD `ssn` VARCHAR(100) NULL AFTER `specimen_collection_date`;
+ALTER TABLE `group_patients` ADD `street2` VARCHAR(500) NULL AFTER `street`;
+ALTER TABLE `group_patients` ADD `ssn` VARCHAR(100) NULL AFTER `specimen_collection_date`;
+
+ALTER TABLE `patients` ADD `AbnormalFlag` VARCHAR(10) NULL AFTER `ssn`, ADD `FirstTestForCondition` VARCHAR(10) NULL AFTER `AbnormalFlag`, ADD `EmployedInHealthCare` VARCHAR(10) NULL AFTER `FirstTestForCondition`, ADD `Symptomatic` VARCHAR(10) NULL AFTER `EmployedInHealthCare`, ADD `DateOfSymptomOnset` VARCHAR(10) NULL AFTER `Symptomatic`, ADD `HospitalizedDueToCOVID` VARCHAR(10) NULL AFTER `DateOfSymptomOnset`;
+
+ALTER TABLE `patients` ADD `AccessionNumber` VARCHAR(50) NULL AFTER `HospitalizedDueToCOVID`, ADD `SpecimenSourceCode` VARCHAR(50) NULL AFTER `AccessionNumber`;
+
+ALTER TABLE `group_patients` ADD `AbnormalFlag` VARCHAR(10) NULL AFTER `ssn`, ADD `FirstTestForCondition` VARCHAR(10) NULL AFTER `AbnormalFlag`, ADD `EmployedInHealthCare` VARCHAR(10) NULL AFTER `FirstTestForCondition`, ADD `Symptomatic` VARCHAR(10) NULL AFTER `EmployedInHealthCare`, ADD `DateOfSymptomOnset` VARCHAR(10) NULL AFTER `Symptomatic`, ADD `HospitalizedDueToCOVID` VARCHAR(10) NULL AFTER `DateOfSymptomOnset`;
+
+ALTER TABLE `group_patients` ADD `AccessionNumber` VARCHAR(50) NULL AFTER `HospitalizedDueToCOVID`, ADD `SpecimenSourceCode` VARCHAR(50) NULL AFTER `AccessionNumber`;
+
+ALTER TABLE `labs` ADD `provider_firstname` VARCHAR(100) NULL AFTER `ftp_folder_path`, ADD `provider_lastname` VARCHAR(100) NULL AFTER `provider_firstname`, ADD `provider_phone` VARCHAR(100) NULL AFTER `provider_lastname`, ADD `provider_address1` VARCHAR(100) NULL AFTER `provider_phone`, ADD `provider_address2` VARCHAR(100) NULL AFTER `provider_address1`, ADD `provider_city` VARCHAR(100) NULL AFTER `provider_address2`, ADD `provider_state` VARCHAR(100) NULL AFTER `provider_city`, ADD `provider_zip` VARCHAR(100) NULL AFTER `provider_state`;
+
+ALTER TABLE `test_types` ADD `loinc_desc` VARCHAR(500) NULL AFTER `loinc`;
+ALTER TABLE `labs` ADD `street2` VARCHAR(100) NULL AFTER `street`;
+
+//create directory /public/uploads/excel-reports

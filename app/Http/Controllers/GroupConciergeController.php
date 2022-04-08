@@ -195,6 +195,16 @@ class GroupConciergeController extends Controller
             $data['specimen_type'] = $request->input('specimen_type');
             $data['specimen_collection_date'] = $request->input('specimen_collection_date');
             $data['progress_status'] = $request->input('progress_status');
+            $data['street2'] = $request->input('street2');
+            $data['ssn'] = $request->input('ssn');
+            $data['AbnormalFlag'] = $request->input('AbnormalFlag');
+            $data['FirstTestForCondition'] = $request->input('FirstTestForCondition');
+            $data['EmployedInHealthCare'] = $request->input('EmployedInHealthCare');
+            $data['Symptomatic'] = $request->input('Symptomatic');
+            $data['DateOfSymptomOnset'] = $request->input('DateOfSymptomOnset');
+            $data['AccessionNumber'] = $request->input('AccessionNumber');
+            $data['SpecimenSourceCode'] = $request->input('SpecimenSourceCode');
+            $data['pregnent'] = $request->input('pregnent');
             $data['created_at'] = date("Y-m-d H:i:s");
             $data['updated_at'] = date("Y-m-d H:i:s");
             $data['status'] = empty($request->input('status')) ? 1 : (bool)$request->input('status');

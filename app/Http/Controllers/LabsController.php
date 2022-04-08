@@ -59,6 +59,14 @@ class LabsController extends Controller
             $lab->ftp_port = empty($request->input('ftp_port')) ? 80 : $request->input('ftp_port');
             $lab->ftp_username = $request->input('ftp_username');
             $lab->ftp_password = $request->input('ftp_password');
+            $lab->provider_firstname = $request->input('provider_firstname');
+            $lab->provider_lastname = $request->input('provider_lastname');
+            $lab->provider_phone = $request->input('provider_phone');
+            $lab->provider_address1 = $request->input('provider_address1');
+            $lab->provider_address2 = $request->input('provider_address2');
+            $lab->provider_city = $request->input('provider_city');
+            $lab->provider_state = $request->input('provider_state');
+            $lab->provider_zip = $request->input('provider_zip');
             $lab->status = empty($request->input('status')) ? 1 : (bool)$request->input('status');
             $lab->save();
             return response()->json(['status' => true, 'data' => $lab, 'message' => 'Lab created successfully.'], 201);

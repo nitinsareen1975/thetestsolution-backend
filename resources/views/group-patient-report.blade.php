@@ -310,7 +310,7 @@
             </tr>
         </table>
         <div class="signature">
-            Medical Director: {{ $report_concerned_person_name }}<br />
+            Medical Director: {{ $report_provider_firstname }} {{ $report_provider_lastname }}<br />
             NPI: {{ $report_npi }}
         </div>
         <!--<footer style="text-align: right;">
