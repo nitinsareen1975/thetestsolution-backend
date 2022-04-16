@@ -197,7 +197,6 @@ class GroupConciergeController extends Controller
             $data['progress_status'] = $request->input('progress_status');
             $data['street2'] = $request->input('street2');
             $data['ssn'] = $request->input('ssn');
-            $data['AbnormalFlag'] = $request->input('AbnormalFlag');
             $data['FirstTestForCondition'] = $request->input('FirstTestForCondition');
             $data['EmployedInHealthCare'] = $request->input('EmployedInHealthCare');
             $data['Symptomatic'] = $request->input('Symptomatic');

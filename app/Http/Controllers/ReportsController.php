@@ -114,7 +114,7 @@ class ReportsController extends Controller
 
     public function export($format, Request $request)
     {
-        $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, l.street as lab_address1, l.street2 as lab_address2, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, l.phone as lab_phone, l.npi, l.provider_firstname, l.provider_lastname, l.provider_phone, l.provider_address1, l.provider_address2, l.provider_city, l.provider_state, l.provider_zip, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.middlename, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, p.SpecimenSourceCode, r.created_at as completed_date, p.confirmation_code, p.street, p.street2, p.city, p.state, p.county, p.zip, p.ssn, p.pregnent, p.AccessionNumber, p.AbnormalFlag, p.FirstTestForCondition, p.EmployedInHealthCare, p.Symptomatic, p.DateOfSymptomOnset, p.HospitalizedDueToCOVID, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, (select result_value from {$this->tableResults} where id = r.id) as result_value, tt.name as test_name, tt.loinc, tt.loinc_desc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
+        $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, l.street as lab_address1, l.street2 as lab_address2, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, l.phone as lab_phone, l.npi, l.provider_firstname, l.provider_lastname, l.provider_phone, l.provider_address1, l.provider_address2, l.provider_city, l.provider_state, l.provider_zip, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.middlename, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, p.SpecimenSourceCode, r.created_at as completed_date, p.confirmation_code, p.street, p.street2, p.city, p.state, p.county, p.zip, p.ssn, p.pregnent, p.AccessionNumber, p.FirstTestForCondition, p.EmployedInHealthCare, p.Symptomatic, p.DateOfSymptomOnset, p.HospitalizedDueToCOVID, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, (select result_value from {$this->tableResults} where id = r.id) as result_value, tt.name as test_name, tt.loinc, tt.loinc_desc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test, tt.kit_device, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
         inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
         inner join {$this->tableLabs} l on l.id = p.lab_assigned  
         inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
@@ -185,7 +185,7 @@ class ReportsController extends Controller
         WHERE r.lab_id = p.lab_assigned "; */
 
 
-        $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, l.street as lab_address1, l.street2 as lab_address2, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, l.phone as lab_phone, l.npi, l.provider_firstname, l.provider_lastname, l.provider_phone, l.provider_address1, l.provider_address2, l.provider_city, l.provider_state, l.provider_zip, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.middlename, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, p.SpecimenSourceCode, r.created_at as completed_date, p.confirmation_code, p.street, p.street2, p.city, p.state, p.county, p.zip, p.ssn, p.pregnent, p.AccessionNumber, p.AbnormalFlag, p.FirstTestForCondition, p.EmployedInHealthCare, p.Symptomatic, p.DateOfSymptomOnset, p.HospitalizedDueToCOVID, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, (select result_value from {$this->tableGroupResults} where id = r.id) as result_value, tt.name as test_name, tt.loinc, tt.loinc_desc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tableGroupPatients} p 
+        $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, l.street as lab_address1, l.street2 as lab_address2, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, l.phone as lab_phone, l.npi, l.provider_firstname, l.provider_lastname, l.provider_phone, l.provider_address1, l.provider_address2, l.provider_city, l.provider_state, l.provider_zip, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.middlename, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, p.SpecimenSourceCode, r.created_at as completed_date, p.confirmation_code, p.street, p.street2, p.city, p.state, p.county, p.zip, p.ssn, p.pregnent, p.AccessionNumber, p.FirstTestForCondition, p.EmployedInHealthCare, p.Symptomatic, p.DateOfSymptomOnset, p.HospitalizedDueToCOVID, (select name from {$this->tableTestTypeNames} where id = tt.test_type) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, (select result_value from {$this->tableGroupResults} where id = r.id) as result_value, tt.name as test_name, tt.loinc, tt.loinc_desc, tt.fi_model, tt.fi_test_name, tt.is_rapid_test,  tt.kit_device, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tableGroupPatients} p 
         inner join {$this->tableGroupEvents} e on e.id = p.group_id  
         inner join {$this->tableLabs} l on l.id = p.lab_assigned  
         inner join {$this->tableTestTypes} tt on tt.id = e.test_type 
@@ -439,9 +439,9 @@ class ReportsController extends Controller
                 $row->result_value,
                 '',//ObservationUnits
                 '',//ReferenceRange
-                ($row->AbnormalFlag == 'Yes') ? 'A' : 'N',
+                (stripos($row->result, 'negative') > -1) ? 'N' : 'A',
                 $row->completed_date,
-                '',//KIT^DEVICE^IDTYPE
+                $row->kit_device,//KIT^DEVICE^IDTYPE
                 $row->lab_assigned,
                 $row->licence_number,
                 $row->loinc,
@@ -458,11 +458,11 @@ class ReportsController extends Controller
                 ($row->Symptomatic == 'Yes') ? 'Y' : 'N',
                 '',//Symptom
                 ($row->DateOfSymptomOnset == 'Yes') ? 'Y' : 'N',
-                ($row->HospitalizedDueToCOVID == 'Yes') ? 'Y' : 'N',
-                '',//InICU,
-                '',//ResidesinCongregateCare,
+                'U',//HospitalizedDueToCOVID
+                'U',//InICU,
+                'U',//ResidesinCongregateCare,
                 '',//SpecifyCongregateSetting
-                '',//StudentTeacherOtherFaculty
+                'U',//StudentTeacherOtherFaculty
                 '' //NameOfSchool
             ];
         }
@@ -473,7 +473,9 @@ class ReportsController extends Controller
         $objPHPExcel->getActiveSheet()->fromArray($_data);
         $filename = 'Abc';
         
-        ob_end_clean();
+        if(ob_get_length() > 0) {
+            ob_end_clean();
+        }
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename="'.$filename.'-formatted.xlsx"');
         header('Cache-Control: max-age=0');

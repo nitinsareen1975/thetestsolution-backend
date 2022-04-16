@@ -158,4 +158,5 @@ ALTER TABLE `labs` ADD `provider_firstname` VARCHAR(100) NULL AFTER `ftp_folder_
 ALTER TABLE `test_types` ADD `loinc_desc` VARCHAR(500) NULL AFTER `loinc`;
 ALTER TABLE `labs` ADD `street2` VARCHAR(100) NULL AFTER `street`;
 
-//create directory /public/uploads/excel-reports
+//2022-04-16
+ALTER TABLE `test_types` ADD `kit_device` VARCHAR(255) NULL AFTER `fi_model`;

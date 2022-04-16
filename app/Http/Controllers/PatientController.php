@@ -88,7 +88,6 @@ class PatientController extends Controller
                 $patients->status = empty($request->input('status')) ? 1 : (bool)$request->input('status');
                 $patients->street2 = $request->input('street2');
                 $patients->ssn = $request->input('ssn');
-                $patients->AbnormalFlag = $request->input('AbnormalFlag');
                 $patients->FirstTestForCondition = $request->input('FirstTestForCondition');
                 $patients->EmployedInHealthCare = $request->input('EmployedInHealthCare');
                 $patients->Symptomatic = $request->input('Symptomatic');
