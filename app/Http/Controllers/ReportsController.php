@@ -396,11 +396,11 @@ class ReportsController extends Controller
             $_data[] = [
                 $row->lab_assigned,
                 $row->licence_number,
-                $row->id,
+                str_pad($row->id, 6, "0", STR_PAD_LEFT),
                 $row->lastname,
                 $row->firstname,
                 $row->middlename,
-                $row->dob,
+                date("m/d/Y", strtotime($row->dob)),
                 $row->gender,
                 $row->race,
                 $row->street,
@@ -429,18 +429,18 @@ class ReportsController extends Controller
                 $row->provider_zip,
                 $row->AccessionNumber,
                 $row->specimen_collection_date,
-                $row->SpecimenSourceCode,
+                $row->specimen_snomed,
                 $row->specimen_collection_date,
                 $row->loinc,
                 $row->loinc_desc,
                 '',//LocalCode
                 '',//LocalCodeDescription
                 $row->snomed,
-                $row->result_value,
+                $row->result,
                 '',//ObservationUnits
                 '',//ReferenceRange
                 (stripos($row->result, 'negative') > -1) ? 'N' : 'A',
-                $row->completed_date,
+                date("m/d/Y", strtotime($row->completed_date)),
                 $row->kit_device,//KIT^DEVICE^IDTYPE
                 $row->lab_assigned,
                 $row->licence_number,
@@ -457,7 +457,7 @@ class ReportsController extends Controller
                 '',//Occupation
                 ($row->Symptomatic == 'Yes') ? 'Y' : 'N',
                 '',//Symptom
-                ($row->DateOfSymptomOnset == 'Yes') ? 'Y' : 'N',
+                date("m/d/Y", strtotime($row->DateOfSymptomOnset)),
                 'U',//HospitalizedDueToCOVID
                 'U',//InICU,
                 'U',//ResidesinCongregateCare,
@@ -496,71 +496,5 @@ class ReportsController extends Controller
             ]
         ], 200);
         
-        try{
-            $facilityName = "";
-            $f = fopen('php://memory', 'r+');
-            $fileHeaders = ['RecordID|FacilityID|CLIAID|AccessionNumber|ClientID|LastName|FirstName|MiddleName|DOB|SSN|StreetAddress|City|State|Zip|County|Gender|PhoneNumber|Ethnicity|RaceWhite|RaceBlack|RaceAmericanIndianAlaskanNative|RaceAsian|RaceNativeHawaiianOrOtherPacificIslander|RaceOther|RaceUnknown|RaceNoResponse|ProviderName|NPI|Pregnant|SchoolAssociation|SchoolName|SpecimenCollectionSite|SpecimenSNOMED|SpecimenCollectedDate|SpecimenReportedDate|RapidTest|Type|ModelOrComponent|LOINC|TestName|SNOMED|Result'];
-            fputcsv($f, $fileHeaders);
-            foreach ($data as $item) {
-                $facilityName = str_replace(" ", "", $item->lab_assigned);
-                $rowData = [
-                    $item->id,
-                    $item->facility_id,
-                    $item->licence_number,
-                    '',
-                    $item->id,
-                    $item->lastname,
-                    $item->firstname,
-                    '',
-                    date("m/d/Y", strtotime($item->dob)),
-                    '',
-                    $item->street,
-                    $item->city,
-                    $item->state,
-                    $item->zip,
-                    $item->county,
-                    $item->gender,
-                    $item->phone,
-                    $item->ethnicity,
-                    ($item->race == "White") ? 1 : 0,
-                    ($item->race == "Black") ? 1 : 0,
-                    ($item->race == "American Indian or Alaska Native") ? 1 : 0,
-                    ($item->race == "Asian") ? 1 : 0,
-                    ($item->race == "Native Hawaiian or Other Pacific Islander") ? 1 : 0,
-                    ($item->race == "Other") ? 1 : 0,
-                    ($item->race == "Unknown") ? 1 : 0,
-                    0,
-                    $item->concerned_person_name,
-                    $item->npi,
-                    '',
-                    '',
-                    '',
-                    $item->specimen_collection_site,
-                    $item->specimen_snomed,
-                    date("m/d/Y", strtotime($item->specimen_collection_date)),
-                    date("m/d/Y", strtotime($item->specimen_collection_date)),
-                    max(0, $item->is_rapid_test),
-                    $item->fi_test_name,
-                    $item->fi_model,
-                    $item->loinc,
-                    $item->test_name,
-                    $item->snomed,
-                    $item->result
-                ];
-                $fields = [implode("|", $rowData)];
-                fputcsv($f, $fields);
-            }
-            rewind($f);
-            return response()->json([
-                'status' => true,
-                'message' => 'Success',
-                'data' => [
-                    'file_content' => stream_get_contents($f),
-                    'file_name' => $facilityName . '_' . date("mdY") . '_' . time() . '.csv'
-                ]
-            ], 200);
-        } catch(Exception $e){
-            return response()->json(['status' => false, 'message' => 'No data found.', 'exception' => $e->getMessage()], 409);
-        }
     }
 }

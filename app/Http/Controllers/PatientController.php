@@ -152,6 +152,8 @@ class PatientController extends Controller
                 foreach ($keys as $key) {
                     if (in_array($key, ['status'])) {
                         $data[$key] = (bool)$request->get($key);
+                    } elseif ($key == "AccessionNumber"){
+                        $data[$key] = $this->generateAccessionNumber();
                     } else {
                         $data[$key] = $request->get($key);
                     }
@@ -551,4 +553,7 @@ class PatientController extends Controller
         $pdf->save($filePath);
     }
 
+    public function generateAccessionNumber(){
+        return date("mdY-His");
+    }
 }
