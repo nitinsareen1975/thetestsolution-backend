@@ -29,6 +29,7 @@ class TestTypeMethodsController extends Controller
             $row = new TestTypeMethods;
             $row->name = $request->input('name');
             $row->code = $request->input('code');
+            $row->specimen_type = $request->input('specimen_type');
             $row->status = empty($request->input('status')) ? 0 : (boolean)$request->input('status');
             $row->save();
             return response()->json(['status' => true, 'data' => $row, 'message' => 'Row created successfully.'], 201);

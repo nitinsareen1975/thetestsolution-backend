@@ -93,7 +93,6 @@ class PatientController extends Controller
                 $patients->Symptomatic = $request->input('Symptomatic');
                 $patients->DateOfSymptomOnset = $request->input('DateOfSymptomOnset');
                 $patients->AccessionNumber = $request->input('AccessionNumber');
-                $patients->SpecimenSourceCode = $request->input('SpecimenSourceCode');
                 $patients->pregnent = $request->input('pregnent');
                 $patients->save();
 
@@ -407,7 +406,7 @@ class PatientController extends Controller
 
     public function getPatientReport($patient_id)
     {
-        $sql = "SELECT p.id, p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, p.identifier, p.identifier_type, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.concerned_person_name, l.provider_firstname, l.provider_lastname, l.npi, l.name as lab_name, l.email as lab_email, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, tt.test_procedure, tt.fi_test_type, (select name from {$this->tableResultTypes} where id=r.result) as result, (select snomed from {$this->tableResultTypes} where id=r.result) as result_snomed, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tablePatients} p 
+        $sql = "SELECT p.id, p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.confirmation_code, p.identifier, p.identifier_type, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.concerned_person_name, l.provider_firstname, l.provider_lastname, l.npi, l.name as lab_name, l.email as lab_email, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, tt.test_procedure, tt.fi_test_type, (select name from {$this->tableResultTypes} where id=r.result) as result, (select snomed from {$this->tableResultTypes} where id=r.result) as result_snomed, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tablePatients} p 
             inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
             inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
             inner join {$this->tableLabs} l on l.id = p.lab_assigned  
@@ -419,7 +418,7 @@ class PatientController extends Controller
 
     public function getGroupPatientReport($patient_id)
     {
-       $sql = "SELECT e.name as event_name, p.id, p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.specimen_type, p.confirmation_code, p.identifier, p.identifier_type, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.concerned_person_name, l.provider_firstname, l.provider_lastname, l.npi, l.name as lab_name, l.email as lab_email, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, tt.test_procedure, tt.fi_test_type, (select name from {$this->tableResultTypes} where id=r.result) as result, (select snomed from {$this->tableResultTypes} where id=r.result) as result_snomed, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tableGroupPatients} p 
+       $sql = "SELECT e.name as event_name, p.id, p.firstname, p.lastname, p.dob, p.gender, p.street, p.city, p.state, p.zip, p.phone, p.ethnicity, p.pregnent, p.specimen_collection_date, p.confirmation_code, p.identifier, p.identifier_type, tt.specimen_site, l.phone as lab_phone, l.licence_number, l.concerned_person_name, l.provider_firstname, l.provider_lastname, l.npi, l.name as lab_name, l.email as lab_email, l.logo, l.date_incorporated, l.facility_id, tt.loinc, tt.name as test_type_name, tt.test_procedure, tt.fi_test_type, (select name from {$this->tableResultTypes} where id=r.result) as result, (select snomed from {$this->tableResultTypes} where id=r.result) as result_snomed, r.result_value, r.created_at as result_date, l.street as lab_street, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as test_type_method FROM {$this->tableGroupPatients} p 
             inner join {$this->tableGroupEvents} e on e.id = p.group_id 
             inner join {$this->tableTestTypes} tt on tt.id = e.test_type 
             inner join {$this->tableLabs} l on l.id = e.lab_location  

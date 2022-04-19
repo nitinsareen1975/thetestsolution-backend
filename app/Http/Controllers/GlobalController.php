@@ -275,7 +275,6 @@ class GlobalController extends Controller
                 $patients->Symptomatic = $request->input('Symptomatic');
                 $patients->DateOfSymptomOnset = $request->input('DateOfSymptomOnset');
                 $patients->AccessionNumber = $request->input('AccessionNumber');
-                $patients->SpecimenSourceCode = $request->input('SpecimenSourceCode');
                 $patients->pregnent = $request->input('pregnent');
                 $patients->save();
 
@@ -792,7 +791,6 @@ class GlobalController extends Controller
             $data['payment_provider'] = $request->input('payment_provider');
             $data['confirmation_code'] = $request->input('confirmation_code');
             $data['specimen_collection_method'] = $request->input('specimen_collection_method');
-            $data['specimen_type'] = $request->input('specimen_type');
             $data['specimen_collection_date'] = $request->input('specimen_collection_date');
             $data['progress_status'] = $request->input('progress_status');
             $data['created_at'] = date("Y-m-d H:i:s");

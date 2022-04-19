@@ -160,3 +160,8 @@ ALTER TABLE `labs` ADD `street2` VARCHAR(100) NULL AFTER `street`;
 
 //2022-04-16
 ALTER TABLE `test_types` ADD `kit_device` VARCHAR(255) NULL AFTER `fi_model`;
+
+//2022-04-19
+ALTER TABLE `patients` DROP `SpecimenSourceCode`;
+ALTER TABLE `patients` DROP `specimen_type`;
+ALTER TABLE `test_type_methods` ADD `specimen_type` VARCHAR(100) NULL AFTER `code`;
