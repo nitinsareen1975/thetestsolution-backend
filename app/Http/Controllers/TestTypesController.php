@@ -50,6 +50,10 @@ class TestTypesController extends Controller
             $testType->fi_test_type = $request->input('fi_test_type');
             $testType->fi_model = $request->input('fi_model');
             $testType->kit_device = $request->input('kit_device');
+            $testType->test_type_csv = $request->input('test_type_csv');
+            $testType->loinc_csv = $request->input('loinc_csv');
+            $testType->fi_test_name_csv = $request->input('fi_test_name_csv');
+            $testType->fi_model_csv = $request->input('fi_model_csv');
             $testType->observation_methods = !empty($request->input('observation_methods')) ? implode(",", $request->input("observation_methods")) : "";
             $testType->is_rapid_test = empty($request->input('is_rapid_test')) ? 0 : (boolean)$request->input('is_rapid_test');
             $testType->status = empty($request->input('status')) ? 0 : (boolean)$request->input('status');

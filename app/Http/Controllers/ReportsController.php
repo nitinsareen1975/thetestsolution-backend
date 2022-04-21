@@ -121,6 +121,15 @@ class ReportsController extends Controller
         inner join {$this->tableResults} r on r.patient_id = p.id 
         WHERE r.lab_id = p.lab_assigned ";
 
+        if ($format == "csv") {
+            $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, l.street as lab_address1, l.street2 as lab_address2, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, l.phone as lab_phone, l.npi, l.provider_firstname, l.provider_lastname, l.provider_phone, l.provider_address1, l.provider_address2, l.provider_city, l.provider_state, l.provider_zip, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.middlename, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.created_at as completed_date, p.confirmation_code, p.street, p.street2, p.city, p.state, p.county, p.zip, p.ssn, p.pregnent, p.AccessionNumber, p.FirstTestForCondition, p.EmployedInHealthCare, p.Symptomatic, p.DateOfSymptomOnset, p.HospitalizedDueToCOVID, (select name from {$this->tableTestTypeNames} where id = tt.test_type_csv) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, (select result_value from {$this->tableResults} where id = r.id) as result_value, tt.name as test_name, tt.loinc_csv as loinc, tt.loinc_desc, tt.fi_model_csv as fi_model, tt.fi_test_name_csv as fi_test_name, tt.is_rapid_test, tt.kit_device, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tablePatients} p 
+            inner join {$this->tablePricing} lp on lp.id = p.pricing_id 
+            inner join {$this->tableLabs} l on l.id = p.lab_assigned  
+            inner join {$this->tableTestTypes} tt on tt.id = lp.test_type 
+            inner join {$this->tableResults} r on r.patient_id = p.id 
+            WHERE r.lab_id = p.lab_assigned ";
+        }
+
         $sort = env("RESULTS_SORT", "id");
         $order = env("RESULTS_ORDER", "desc");
         $token = JWTAuth::getToken();
@@ -159,7 +168,7 @@ class ReportsController extends Controller
         /* filters, pagination and sorter */
         $data = DB::select($query);
         if (count($data) > 0) {
-            switch($format){
+            switch ($format) {
                 case 'csv':
                     return $this->exportAsCSV($data);
                     break;
@@ -167,7 +176,7 @@ class ReportsController extends Controller
                     return $this->exportAsXls($data);
                     break;
                 default:
-                return response()->json(['status' => false, 'message' => 'Format not supported.'], 409);
+                    return response()->json(['status' => false, 'message' => 'Format not supported.'], 409);
                     break;
             }
         } else {
@@ -192,6 +201,15 @@ class ReportsController extends Controller
         inner join {$this->tableGroupResults} r on r.patient_id = p.id 
         WHERE r.lab_id = p.lab_assigned ";
 
+        if($format == "csv"){
+            $query = "SELECT p.id, l.licence_number, l.concerned_person_name, l.npi, l.facility_id, l.street as lab_address1, l.street2 as lab_address2, l.city as lab_city, l.state as lab_state, l.zip as lab_zip, l.phone as lab_phone, l.npi, l.provider_firstname, l.provider_lastname, l.provider_phone, l.provider_address1, l.provider_address2, l.provider_city, l.provider_state, l.provider_zip, (SELECT l.name FROM {$this->tableLabs} l WHERE l.id IN (p.lab_assigned)) as lab_assigned, p.lab_assigned as lab_id, p.firstname, p.middlename, p.lastname, p.email, p.phone, p.gender, p.dob, p.scheduled_date, p.specimen_collection_date, r.created_at as completed_date, p.confirmation_code, p.street, p.street2, p.city, p.state, p.county, p.zip, p.ssn, p.pregnent, p.AccessionNumber, p.FirstTestForCondition, p.EmployedInHealthCare, p.Symptomatic, p.DateOfSymptomOnset, p.HospitalizedDueToCOVID, (select name from {$this->tableTestTypeNames} where id = tt.test_type_csv) as test_type, (select name from {$this->tableResultTypes} where id = r.result) as result, (select snomed from {$this->tableResultTypes} where id = r.result) as snomed, (select result_value from {$this->tableGroupResults} where id = r.id) as result_value, tt.name as test_name, tt.loinc_csv as loinc, tt.loinc_desc, tt.fi_model_csv as fi_model, tt.fi_test_name_csv as fi_test_name, tt.is_rapid_test,  tt.kit_device, (select code from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_snomed, (select name from {$this->tableTestTypeMethods} where id = r.test_type_method_id) as specimen_collection_site, p.race, p.ethnicity FROM {$this->tableGroupPatients} p 
+            inner join {$this->tableGroupEvents} e on e.id = p.group_id  
+            inner join {$this->tableLabs} l on l.id = p.lab_assigned  
+            inner join {$this->tableTestTypes} tt on tt.id = e.test_type 
+            inner join {$this->tableGroupResults} r on r.patient_id = p.id 
+            WHERE r.lab_id = p.lab_assigned ";
+        }
+
         $sort = env("RESULTS_SORT", "id");
         $order = env("RESULTS_ORDER", "desc");
         $token = JWTAuth::getToken();
@@ -230,7 +248,7 @@ class ReportsController extends Controller
         /* filters, pagination and sorter */
         $data = DB::select($query);
         if (count($data) > 0) {
-            switch($format){
+            switch ($format) {
                 case 'csv':
                     return $this->exportAsCSV($data);
                     break;
@@ -238,7 +256,7 @@ class ReportsController extends Controller
                     return $this->exportAsXls($data);
                     break;
                 default:
-                return response()->json(['status' => false, 'message' => 'Format not supported.'], 409);
+                    return response()->json(['status' => false, 'message' => 'Format not supported.'], 409);
                     break;
             }
         } else {
@@ -248,12 +266,15 @@ class ReportsController extends Controller
 
     public function exportAsCSV($data)
     {
-        try{
+        try {
             $facilityName = "";
             $f = fopen('php://memory', 'r+');
-            $fileHeaders = ['RecordID|FacilityID|CLIAID|AccessionNumber|ClientID|LastName|FirstName|MiddleName|DOB|SSN|StreetAddress|City|State|Zip|County|Gender|PhoneNumber|Ethnicity|RaceWhite|RaceBlack|RaceAmericanIndianAlaskanNative|RaceAsian|RaceNativeHawaiianOrOtherPacificIslander|RaceOther|RaceUnknown|RaceNoResponse|ProviderName|NPI|Pregnant|SchoolAssociation|SchoolName|SpecimenCollectionSite|SpecimenSNOMED|SpecimenCollectedDate|SpecimenReportedDate|RapidTest|Type|ModelOrComponent|LOINC|TestName|SNOMED|Result'];
-            fputcsv($f, $fileHeaders);
+            $fileHeaders = "RecordID|FacilityID|CLIAID|AccessionNumber|ClientID|LastName|FirstName|MiddleName|DOB|SSN|StreetAddress|City|State|Zip|County|Gender|PhoneNumber|Ethnicity|RaceWhite|RaceBlack|RaceAmericanIndianAlaskanNative|RaceAsian|RaceNativeHawaiianOrOtherPacificIslander|RaceOther|RaceUnknown|RaceNoResponse|ProviderName|NPI|Pregnant|SchoolAssociation|SchoolName|SpecimenCollectionSite|SpecimenSNOMED|SpecimenCollectedDate|SpecimenReportedDate|RapidTest|Type|ModelOrComponent|LOINC|TestName|SNOMED|Result\n";
+            fputs($f, $fileHeaders);
             foreach ($data as $item) {
+                foreach ($item as $key => &$value) {
+                    $value = str_replace(",", "", $value);
+                }
                 $facilityName = str_replace(" ", "", $item->lab_assigned);
                 $rowData = [
                     $item->id,
@@ -292,15 +313,15 @@ class ReportsController extends Controller
                     date("m/d/Y", strtotime($item->specimen_collection_date)),
                     date("m/d/Y", strtotime($item->specimen_collection_date)),
                     max(0, $item->is_rapid_test),
-                    $item->fi_test_name,
+                    $item->test_type, //type
                     $item->fi_model,
                     $item->loinc,
-                    $item->test_name,
+                    $item->fi_test_name,
                     $item->snomed,
                     $item->result
                 ];
-                $fields = [implode("|", $rowData)];
-                fputcsv($f, $fields);
+                $fields = implode("|", $rowData) . "\n";
+                fputs($f, $fields);
             }
             rewind($f);
             return response()->json([
@@ -311,14 +332,14 @@ class ReportsController extends Controller
                     'file_name' => $facilityName . '_' . date("mdY") . '_' . time() . '.csv'
                 ]
             ], 200);
-        } catch(Exception $e){
+        } catch (Exception $e) {
             return response()->json(['status' => false, 'message' => 'No data found.', 'exception' => $e->getMessage()], 409);
         }
     }
-    
+
     public function exportAsXls($data)
     {
-        require_once base_path(). DIRECTORY_SEPARATOR .'third-party'.DIRECTORY_SEPARATOR.'PHPExcel'.DIRECTORY_SEPARATOR.'PHPExcel.php';
+        require_once base_path() . DIRECTORY_SEPARATOR . 'third-party' . DIRECTORY_SEPARATOR . 'PHPExcel' . DIRECTORY_SEPARATOR . 'PHPExcel.php';
         $_data = [];
         $_data[] = [
             'SendingFacilityName',
@@ -392,7 +413,7 @@ class ReportsController extends Controller
             'StudentTeacherOtherFaculty(63511-0)',
             'NameOfSchool(66280-9)'
         ];
-        foreach($data as $row){
+        foreach ($data as $row) {
             $_data[] = [
                 $row->lab_assigned,
                 $row->licence_number,
@@ -433,36 +454,36 @@ class ReportsController extends Controller
                 date("m/d/Y", strtotime($row->specimen_collection_date)),
                 $row->loinc,
                 $row->loinc_desc,
-                '',//LocalCode
-                '',//LocalCodeDescription
+                '', //LocalCode
+                '', //LocalCodeDescription
                 $row->snomed,
                 $row->result,
-                '',//ObservationUnits
-                '',//ReferenceRange
+                '', //ObservationUnits
+                '', //ReferenceRange
                 (stripos($row->result, 'negative') > -1) ? 'N' : 'A',
                 date("m/d/Y", strtotime($row->completed_date)),
-                $row->kit_device,//KIT^DEVICE^IDTYPE
+                $row->kit_device, //KIT^DEVICE^IDTYPE
                 $row->lab_assigned,
                 $row->licence_number,
                 $row->loinc,
                 $row->loinc_desc,
-                '',//CT_Value
-                '',//CT_Reference_Range
-                '',//Variant_LOINC
-                '',//Variant_Result
-                (date('Y') - date('Y',strtotime($row->dob))).' years old',
+                '', //CT_Value
+                '', //CT_Reference_Range
+                '', //Variant_LOINC
+                '', //Variant_Result
+                (date('Y') - date('Y', strtotime($row->dob))) . ' years old',
                 ($row->gender == 'Male') ? '' : (($row->pregnent == 'Yes') ? 'Y' : 'N'),
                 ($row->FirstTestForCondition == 'Yes') ? 'Y' : 'N',
                 ($row->EmployedInHealthCare == 'Yes') ? 'Y' : 'N',
-                '',//Occupation
+                '', //Occupation
                 ($row->Symptomatic == 'Yes') ? 'Y' : 'N',
-                '',//Symptom
+                '', //Symptom
                 date("m/d/Y", strtotime($row->DateOfSymptomOnset)),
-                'U',//HospitalizedDueToCOVID
-                'U',//InICU,
-                'U',//ResidesinCongregateCare,
-                '',//SpecifyCongregateSetting
-                'U',//StudentTeacherOtherFaculty
+                'U', //HospitalizedDueToCOVID
+                'U', //InICU,
+                'U', //ResidesinCongregateCare,
+                '', //SpecifyCongregateSetting
+                'U', //StudentTeacherOtherFaculty
                 '' //NameOfSchool
             ];
         }
@@ -472,14 +493,14 @@ class ReportsController extends Controller
 
         $objPHPExcel->getActiveSheet()->fromArray($_data);
         $filename = 'Abc';
-        
-        if(ob_get_length() > 0) {
+
+        if (ob_get_length() > 0) {
             ob_end_clean();
         }
         header('Content-Type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment;filename="'.$filename.'-formatted.xlsx"');
+        header('Content-Disposition: attachment;filename="' . $filename . '-formatted.xlsx"');
         header('Cache-Control: max-age=0');
-        
+
         $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
         ob_start();
         $objWriter->save('php://output');
@@ -491,10 +512,9 @@ class ReportsController extends Controller
             'status' => true,
             'message' => 'Success',
             'data' => [
-                'file_content' => "data:application/vnd.ms-excel;base64,".base64_encode($xlsData),
+                'file_content' => "data:application/vnd.ms-excel;base64," . base64_encode($xlsData),
                 'file_name' => 'PatientsExport_' . date("mdY") . '_' . time() . '.xlsx'
             ]
         ], 200);
-        
     }
 }

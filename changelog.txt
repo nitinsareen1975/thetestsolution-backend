@@ -165,3 +165,6 @@ ALTER TABLE `test_types` ADD `kit_device` VARCHAR(255) NULL AFTER `fi_model`;
 ALTER TABLE `patients` DROP `SpecimenSourceCode`;
 ALTER TABLE `patients` DROP `specimen_type`;
 ALTER TABLE `test_type_methods` ADD `specimen_type` VARCHAR(100) NULL AFTER `code`;
+
+//2022-04-21
+ALTER TABLE `test_types` ADD `test_type_csv` VARCHAR(100) NULL AFTER `observation_methods`, ADD `loinc_csv` VARCHAR(100) NULL AFTER `test_type_csv`, ADD `fi_test_name_csv` VARCHAR(100) NULL AFTER `loinc_csv`, ADD `fi_model_csv` VARCHAR(100) NULL AFTER `fi_test_name_csv`;
