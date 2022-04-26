@@ -175,6 +175,9 @@ class ReportsController extends Controller
                 case 'xls':
                     return $this->exportAsXls($data);
                     break;
+                case 'autoelr':
+                    return $this->exportAsAutoELR($data);
+                    break;
                 default:
                     return response()->json(['status' => false, 'message' => 'Format not supported.'], 409);
                     break;
@@ -255,6 +258,9 @@ class ReportsController extends Controller
                 case 'xls':
                     return $this->exportAsXls($data);
                     break;
+                case 'autoelr':
+                    return $this->exportAsAutoELR($data);
+                    break;
                 default:
                     return response()->json(['status' => false, 'message' => 'Format not supported.'], 409);
                     break;
@@ -270,6 +276,7 @@ class ReportsController extends Controller
             $facilityName = "";
             $f = fopen('php://memory', 'r+');
             $fileHeaders = "RecordID|FacilityID|CLIAID|AccessionNumber|ClientID|LastName|FirstName|MiddleName|DOB|SSN|StreetAddress|City|State|Zip|County|Gender|PhoneNumber|Ethnicity|RaceWhite|RaceBlack|RaceAmericanIndianAlaskanNative|RaceAsian|RaceNativeHawaiianOrOtherPacificIslander|RaceOther|RaceUnknown|RaceNoResponse|ProviderName|NPI|Pregnant|SchoolAssociation|SchoolName|SpecimenCollectionSite|SpecimenSNOMED|SpecimenCollectedDate|SpecimenReportedDate|RapidTest|Type|ModelOrComponent|LOINC|TestName|SNOMED|Result\n";
+            //$fileHeaders = str_replace("|",",", $fileHeaders);
             fputs($f, $fileHeaders);
             foreach ($data as $item) {
                 foreach ($item as $key => &$value) {
@@ -277,10 +284,10 @@ class ReportsController extends Controller
                 }
                 $facilityName = str_replace(" ", "", $item->lab_assigned);
                 $rowData = [
-                    $item->id,
+                    '1'.str_pad($item->id, 6, "0", STR_PAD_LEFT),
                     $item->facility_id,
                     $item->licence_number,
-                    '',
+                    $item->AccessionNumber,
                     $item->id,
                     $item->lastname,
                     $item->firstname,
@@ -329,7 +336,7 @@ class ReportsController extends Controller
                 'message' => 'Success',
                 'data' => [
                     'file_content' => stream_get_contents($f),
-                    'file_name' => $facilityName . '_' . date("mdY") . '_' . time() . '.csv'
+                    'file_name' => $facilityName . '_' . date("mdyHis") . '.csv'
                 ]
             ], 200);
         } catch (Exception $e) {
@@ -516,5 +523,179 @@ class ReportsController extends Controller
                 'file_name' => 'PatientsExport_' . date("mdY") . '_' . time() . '.xlsx'
             ]
         ], 200);
+    }
+
+    public function exportAsAutoELR($data)
+    {
+        try {
+            $f = fopen('php://memory', 'r+');
+            $_data = [];
+            $fileHeaders = [
+                'SendingFacilityName',
+                'SendingFacilityCLIA',
+                'MedicalRecordNumber',
+                'PatientLastname',
+                'PatientFirstname',
+                'PatientMiddlename',
+                'DOB',
+                'Gender',
+                'PatientRace',
+                'PatientAddress1',
+                'PatientAddress2',
+                'PatientCity',
+                'PatientState',
+                'PatientZip',
+                'PatientPhoneNumber',
+                'SSNumber',
+                'PatientEthnicity',
+                'OrderingFacilityName',
+                'OrderingFacilityAddress1',
+                'OrderingFacilityAddress2',
+                'OrderingFacilityCity',
+                'OrderingFacilityState',
+                'OrderingFacilityZip',
+                'OrderingFacilityPhoneNumber',
+                'OrderingProviderNPI',
+                'OrderingProviderLastName',
+                'OrderingProviderFirstName',
+                'OrderingProviderPhoneNumber',
+                'OrderingProviderAddress1',
+                'OrderingProviderAddress2',
+                'OrderingProviderCity',
+                'OrderingProviderState',
+                'OrderingProviderZip',
+                'AccessionNumber',
+                'SpecimenCollectedDate',
+                'SpecimenSourceCode',
+                'SpecimenReceivedDate',
+                'LOINC_Code',
+                'LOINC_Description',
+                'LocalCode',
+                'LocalCodeDescription',
+                'SNOMEDResultCode',
+                'TestResultDescription',
+                'ObservationUnits',
+                'ReferenceRange',
+                'AbnormalFlag',
+                'FinalizedDate',
+                'KIT^DEVICE^IDTYPE',
+                'PerformingLabName',
+                'PerformingLabCLIA',
+                'LOINC_Code_CT',
+                'LOINC_Description_CT',
+                'CT_Value',
+                'CT_Reference_Range',
+                'Variant_LOINC',
+                'Variant_Result',
+                'Age(30525-0)',
+                'PregnancyStatus(82810-3)',
+                'FirstTestForCondition(95417-2)',
+                'EmployedInHealthCare(95418-0)',
+                'Occupation(85658-3)',
+                'Symptomatic(95419-8)',
+                'Symptom(75325-1)',
+                'DateOfSymptomOnset(65222-2)',
+                'HospitalizedDueToCOVID(77974-4)',
+                'InICU(95420-6)',
+                'ResidesinCongregateCare(95421-4)',
+                'SpecifyCongregateSetting(75617-1)',
+                'StudentTeacherOtherFaculty(63511-0)',
+                'NameOfSchool(66280-9)'
+            ];
+            
+            fputs($f, implode(",",$fileHeaders)."\n");
+            foreach ($data as $row) {
+                foreach ($row as $key => &$value) {
+                    $value = str_replace(",", "", $value);
+                }
+                $facilityName = str_replace(" ", "", $row->lab_assigned);
+                $rowData = [
+                    $row->lab_assigned,
+                    $row->licence_number,
+                    '1'.str_pad($row->id, 6, "0", STR_PAD_LEFT),
+                    $row->lastname,
+                    $row->firstname,
+                    $row->middlename,
+                    date("m/d/Y", strtotime($row->dob)),
+                    $row->gender,
+                    $row->race,
+                    $row->street,
+                    $row->street2,
+                    $row->city,
+                    $row->state,
+                    $row->zip,
+                    $row->phone,
+                    $row->ssn,
+                    $row->ethnicity,
+                    $row->lab_assigned,
+                    $row->lab_address1,
+                    $row->lab_address2,
+                    $row->lab_city,
+                    $row->lab_state,
+                    $row->lab_zip,
+                    $row->lab_phone,
+                    $row->npi,
+                    $row->provider_lastname,
+                    $row->provider_firstname,
+                    $row->provider_phone,
+                    $row->provider_address1,
+                    $row->provider_address2,
+                    $row->provider_city,
+                    $row->provider_state,
+                    $row->provider_zip,
+                    $row->AccessionNumber,
+                    date("m/d/Y", strtotime($row->specimen_collection_date)),
+                    $row->specimen_snomed,
+                    date("m/d/Y", strtotime($row->specimen_collection_date)),
+                    $row->loinc,
+                    $row->loinc_desc,
+                    '', //LocalCode
+                    '', //LocalCodeDescription
+                    $row->snomed,
+                    $row->result,
+                    '', //ObservationUnits
+                    '', //ReferenceRange
+                    (stripos($row->result, 'negative') > -1) ? 'N' : 'A',
+                    date("m/d/Y", strtotime($row->completed_date)),
+                    $row->kit_device, //KIT^DEVICE^IDTYPE
+                    $row->lab_assigned,
+                    $row->licence_number,
+                    $row->loinc,
+                    $row->loinc_desc,
+                    '', //CT_Value
+                    '', //CT_Reference_Range
+                    '', //Variant_LOINC
+                    '', //Variant_Result
+                    (date('Y') - date('Y', strtotime($row->dob))) . ' years old',
+                    ($row->gender == 'Male') ? '' : (($row->pregnent == 'Yes') ? 'Y' : 'N'),
+                    ($row->FirstTestForCondition == 'Yes') ? 'Y' : 'N',
+                    ($row->EmployedInHealthCare == 'Yes') ? 'Y' : 'N',
+                    '', //Occupation
+                    ($row->Symptomatic == 'Yes') ? 'Y' : 'N',
+                    '', //Symptom
+                    date("m/d/Y", strtotime($row->DateOfSymptomOnset)),
+                    'U', //HospitalizedDueToCOVID
+                    'U', //InICU,
+                    'U', //ResidesinCongregateCare,
+                    '', //SpecifyCongregateSetting
+                    'U', //StudentTeacherOtherFaculty
+                    '' //NameOfSchool
+                ];
+                $fields = implode(",", $rowData) . "\n";
+                fputs($f, $fields);
+            }
+            rewind($f);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Success',
+                'data' => [
+                    'file_content' => stream_get_contents($f),
+                    'file_name' => $facilityName . '_' . date("mdyHis") . '.csv'
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => false, 'message' => 'No data found.', 'exception' => $e->getMessage()], 409);
+        }
     }
 }
